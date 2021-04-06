@@ -1,11 +1,11 @@
 # source: https://stackoverflow.com/questions/16366857/show-webcam-sequence-tkinter
+import cv2
+import time as timing
 from enum import Enum
 from collections import deque
 from threading import Thread
-
-import cv2
-import time as timing
 from tkinter import *
+
 from PIL import Image, ImageTk
 
 
@@ -21,6 +21,7 @@ class TimeSource:
     @property
     def nanos(self):
         return timing.time_ns()
+
 
 class State(Enum):
     UNINITIALISED = 0
@@ -84,6 +85,7 @@ class CameraSource:
     def camera(self):
         return self.__camera
 
+
 class GUI:
     # TODO: resizing
     # TODO: hooking for drawing / classification / segmentation / etc
@@ -95,13 +97,14 @@ class GUI:
     __delay_ms: int = 10
     __last: int = -1
 
-    def __init__(self, title: str, width: int, height: int, callback, port: int = 0, history: int = 5):
+    def __init__(self, title: str, width: int, height: int, process_frame = None, process_image = None, port: int = 0, history: int = 5):
         self.__title = title
         self.__width = width
         self.__height = height
-        self.__callback = callback
+        self.process_frame = process_frame if process_frame is not None else lambda frame: frame
+        self.process_image = process_image if process_image is not None else lambda image: image
         self.__port = port
-        self.__frames = deque([0] * history)
+        self.__frames = deque([0.0] * history)
 
     @property
     def time(self):
@@ -142,13 +145,12 @@ class GUI:
 
         self.__last = timestamp
 
-        processed = self.__callback(frame)
+        frame = self.process_frame(frame)
+        image = self.process_image(Image.fromarray(frame))
+        photo = ImageTk.PhotoImage(image=image)
 
-        array = Image.fromarray(processed)
-        image = ImageTk.PhotoImage(image=array)
-
-        canvas.configure(image=image)
-        canvas.__cached = image  # avoid garbage collection
+        canvas.configure(image=photo)
+        canvas.__cached = photo  # avoid garbage collection
 
     def __update_fps(self, canvas):
         frame_times = self.__frames
@@ -183,23 +185,23 @@ class GUI:
         image_canvas.pack()
 
         # FPS label
-        fps_component = Label(master=root)
-        fps_component.pack()
+        fps_canvas = Label(master=root)
+        fps_canvas.pack()
 
         # dimension info
-        dimension_component = Label(master=root, text=f'Dimensions: {self.width}x{self.height}px')
-        dimension_component.pack()
+        dimensions_canvas = Label(master=root, text=f'Dimensions: {self.width}x{self.height}px')
+        dimensions_canvas.pack()
 
         # version info
-        version_component = Label(master=root, text=f'TK/TCL: {TkVersion}/{TclVersion}')
-        version_component.pack()
+        version_canvas = Label(master=root, text=f'TK/TCL: {TkVersion}/{TclVersion}')
+        version_canvas.pack()
 
         # exit button
         exit_button = Button(master=root, text='Exit', command=lambda: self.__destroy())
         exit_button.pack()
 
         # setup the update callback
-        root.after(0, func=lambda: self.__update_all(image_canvas, fps_component))
+        root.after(0, func=lambda: self.__update_all(image_canvas, fps_canvas))
 
     def __setup(self):
         self.__setup_source()
@@ -219,17 +221,68 @@ class GUI:
         self.__destroy_canvas()
 
 
-def image_callback(frame):
-    grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+# source attribution: https://stackoverflow.com/questions/43512615/reshaping-rectangular-image-to-square
+def resize_image(image: Image, length: int) -> Image:
+    """
+    Resize an image to a square. Can make an image bigger to make it fit or smaller if it doesn't fit. It also crops
+    part of the image.
 
-    # TODO: externalise...
-    scale = 0.60
-    w = int(frame.shape[1] * scale)
-    h = int(frame.shape[0] * scale)
-    d = (w, h)
+    :param image: Image to resize.
+    :param length: Width and height of the output image.
+    :return: Return the resized image.
+    """
 
-    return cv2.resize(grayscale, d, interpolation=cv2.INTER_CUBIC)
+    """
+    Resizing strategy : 
+     1) We resize the smallest side to the desired dimension (e.g. 1080)
+     2) We crop the other side so as to make it fit with the same length as the smallest side (e.g. 1080)
+    """
+    if image.size[0] < image.size[1]:
+        # The image is in portrait mode. Height is bigger than width.
+
+        # This makes the width fit the LENGTH in pixels while conserving the ratio.
+        resized_image = image.resize((length, int(image.size[1] * (length / image.size[0]))))
+
+        # Amount of pixel to lose in total on the height of the image.
+        required_loss = (resized_image.size[1] - length)
+
+        # Crop the height of the image so as to keep the center part.
+        resized_image = resized_image.crop(
+            box=(0, required_loss / 2, length, resized_image.size[1] - required_loss / 2))
+
+        # We now have a length*length pixels image.
+        return resized_image
+    else:
+        # This image is in landscape mode or already squared. The width is bigger than the height.
+
+        # This makes the height fit the LENGTH in pixels while conserving the ration.
+        resized_image = image.resize((int(image.size[0] * (length / image.size[1])), length))
+
+        # Amount of pixel to lose in total on the width of the image.
+        required_loss = resized_image.size[0] - length
+
+        # Crop the width of the image so as to keep 1080 pixels of the center part.
+        resized_image = resized_image.crop(
+            box=(required_loss / 2, 0, resized_image.size[0] - required_loss / 2, length))
+
+        # We now have a length*length pixels image.
+        return resized_image
+
+
+def frame_callback(frame):
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    return frame
+
+
+def image_callback(image, size):
+    image = resize_image(image, size)
+    # TODO: apply machine learning model...
+    return image
+
 
 if __name__ == '__main__':
-    gui = GUI(title='Webcam', width=640, height=480, callback=image_callback)
+    frame = lambda f: frame_callback(f)
+    image = lambda i: image_callback(i, 360)
+
+    gui = GUI(title='Webcam', width=1024, height=720, process_frame=frame, process_image=image)
     gui.start()
