@@ -95,10 +95,11 @@ class GUI:
     __delay_ms: int = 10
     __last: int = -1
 
-    def __init__(self, title: str, width: int, height: int, port: int = 0, history: int = 5):
+    def __init__(self, title: str, width: int, height: int, callback, port: int = 0, history: int = 5):
         self.__title = title
         self.__width = width
         self.__height = height
+        self.__callback = callback
         self.__port = port
         self.__frames = deque([0] * history)
 
@@ -141,17 +142,9 @@ class GUI:
 
         self.__last = timestamp
 
-        grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        processed = self.__callback(frame)
 
-        # TODO: externalise...
-        scale = 0.60
-        w = int(frame.shape[1] * scale)
-        h = int(frame.shape[0] * scale)
-        d = (w, h)
-
-        scaled = cv2.resize(grayscale, d, interpolation=cv2.INTER_CUBIC)
-
-        array = Image.fromarray(scaled)
+        array = Image.fromarray(processed)
         image = ImageTk.PhotoImage(image=array)
 
         canvas.configure(image=image)
@@ -226,6 +219,17 @@ class GUI:
         self.__destroy_canvas()
 
 
+def image_callback(frame):
+    grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # TODO: externalise...
+    scale = 0.60
+    w = int(frame.shape[1] * scale)
+    h = int(frame.shape[0] * scale)
+    d = (w, h)
+
+    return cv2.resize(grayscale, d, interpolation=cv2.INTER_CUBIC)
+
 if __name__ == '__main__':
-    gui = GUI(title='Webcam', width=640, height=480)
+    gui = GUI(title='Webcam', width=640, height=480, callback=image_callback)
     gui.start()
