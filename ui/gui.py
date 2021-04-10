@@ -1,89 +1,12 @@
-# source: https://stackoverflow.com/questions/16366857/show-webcam-sequence-tkinter
 import cv2
-import time as timing
-from enum import Enum
+from typing import Optional
 from collections import deque
-from threading import Thread
 from tkinter import *
-
 from PIL import Image, ImageTk
-
-
-class TimeSource:
-    @property
-    def seconds(self):
-        return timing.time()
-
-    @property
-    def millis(self):
-        return int(self.seconds * 1000)
-
-    @property
-    def nanos(self):
-        return timing.time_ns()
-
-
-class State(Enum):
-    UNINITIALISED = 0
-    INTERMEDIATE = 1
-    RUNNING = 2
-
-
-class CameraSource:
-    __state: State = State.UNINITIALISED
-    __thread = None
-    __image = (None, 0)
-    __last = 0
-
-    def __init__(self, camera, time, __delay_ms):
-        self.__camera = camera
-        self.__time = time
-        self.__delay = __delay_ms
-
-    def __update(self):
-        now = self.__time.millis
-        if (now - self.__last) < self.__delay:
-            return
-        self.__last = now
-
-        ok, frame = self.camera.read()
-        image = frame if ok else None
-        self.__image = (image, now)
-
-    def __run(self):
-        while self.__state == State.RUNNING:
-            self.__update()
-        self.__cleanup()
-
-    def __cleanup(self):
-        self.__thread = None
-        self.__image = None
-        self.__camera.release()
-        self.__camera = None
-        self.__state = State.UNINITIALISED
-
-    def start(self):
-        if self.__state != State.UNINITIALISED:
-            return
-        self.__state = State.INTERMEDIATE
-        self.__thread = thread = Thread(target=self.__run)
-        thread.daemon = True
-        self.__state = State.RUNNING
-        thread.start()
-
-    def stop(self):
-        if self.__state != State.RUNNING:
-            return
-        self.__state = State.INTERMEDIATE
-        self.__thread.join()
-
-    @property
-    def image(self):
-        return self.__image
-
-    @property
-    def camera(self):
-        return self.__camera
+from timing.time_source import TimeSource
+from ui.callback.callback import FrameCallback
+from ui.source.image_source import ImageSource, VideoImageSource
+from ui.state import State
 
 
 class GUI:
@@ -93,16 +16,16 @@ class GUI:
     __time = TimeSource()
     __state: State = State.UNINITIALISED
     __root = None
-    __source = None
+    __callback: FrameCallback
+    __source = Optional[ImageSource]
     __delay_ms: int = 10
     __last: int = -1
 
-    def __init__(self, title: str, width: int, height: int, process_frame = None, process_image = None, port: int = 0, history: int = 5):
+    def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0, history: int = 5):
         self.__title = title
         self.__width = width
         self.__height = height
-        self.process_frame = process_frame if process_frame is not None else lambda frame: frame
-        self.process_image = process_image if process_image is not None else lambda image: image
+        self.__callback = callback if callback is not None else FrameCallback(lambda frame: Image.fromarray(frame))
         self.__port = port
         self.__frames = deque([0.0] * history)
 
@@ -145,8 +68,7 @@ class GUI:
 
         self.__last = timestamp
 
-        frame = self.process_frame(frame)
-        image = self.process_image(Image.fromarray(frame))
+        image = self.__callback.invoke(frame)
         photo = ImageTk.PhotoImage(image=image)
 
         canvas.configure(image=photo)
@@ -171,7 +93,7 @@ class GUI:
         root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
 
     def __setup_source(self):
-        self.__source = source = CameraSource(cv2.VideoCapture(self.__port), self.time, self.__delay_ms)
+        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.time, self.__delay_ms)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
         source.start()
@@ -219,70 +141,3 @@ class GUI:
     def __destroy(self):
         self.__destroy_source()
         self.__destroy_canvas()
-
-
-# source attribution: https://stackoverflow.com/questions/43512615/reshaping-rectangular-image-to-square
-def resize_image(image: Image, length: int) -> Image:
-    """
-    Resize an image to a square. Can make an image bigger to make it fit or smaller if it doesn't fit. It also crops
-    part of the image.
-
-    :param image: Image to resize.
-    :param length: Width and height of the output image.
-    :return: Return the resized image.
-    """
-
-    """
-    Resizing strategy : 
-     1) We resize the smallest side to the desired dimension (e.g. 1080)
-     2) We crop the other side so as to make it fit with the same length as the smallest side (e.g. 1080)
-    """
-    if image.size[0] < image.size[1]:
-        # The image is in portrait mode. Height is bigger than width.
-
-        # This makes the width fit the LENGTH in pixels while conserving the ratio.
-        resized_image = image.resize((length, int(image.size[1] * (length / image.size[0]))))
-
-        # Amount of pixel to lose in total on the height of the image.
-        required_loss = (resized_image.size[1] - length)
-
-        # Crop the height of the image so as to keep the center part.
-        resized_image = resized_image.crop(
-            box=(0, required_loss / 2, length, resized_image.size[1] - required_loss / 2))
-
-        # We now have a length*length pixels image.
-        return resized_image
-    else:
-        # This image is in landscape mode or already squared. The width is bigger than the height.
-
-        # This makes the height fit the LENGTH in pixels while conserving the ration.
-        resized_image = image.resize((int(image.size[0] * (length / image.size[1])), length))
-
-        # Amount of pixel to lose in total on the width of the image.
-        required_loss = resized_image.size[0] - length
-
-        # Crop the width of the image so as to keep 1080 pixels of the center part.
-        resized_image = resized_image.crop(
-            box=(required_loss / 2, 0, resized_image.size[0] - required_loss / 2, length))
-
-        # We now have a length*length pixels image.
-        return resized_image
-
-
-def frame_callback(frame):
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    return frame
-
-
-def image_callback(image, size):
-    image = resize_image(image, size)
-    # TODO: apply machine learning model...
-    return image
-
-
-if __name__ == '__main__':
-    frame = lambda f: frame_callback(f)
-    image = lambda i: image_callback(i, 360)
-
-    gui = GUI(title='Webcam', width=1024, height=720, process_frame=frame, process_image=image)
-    gui.start()
