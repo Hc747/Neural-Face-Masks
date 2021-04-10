@@ -1,0 +1,5 @@
+# source attribution: https://stackoverflow.com/questions/16366857/show-webcam-sequence-tkinter
+# source attribution: https://www.pyimagesearch.com/2017/03/27/how-to-install-dlib/
+# source attribution: https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
+# source attribution: https://www.pyimagesearch.com/2020/05/04/covid-19-face-mask-detector-with-opencv-keras-tensorflow-and-deep-learning/
+# source attribution: https://stackoverflow.com/questions/43512615/reshaping-rectangular-image-to-square
