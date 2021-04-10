@@ -4,7 +4,7 @@ import cv2
 import dlib
 import numpy as np
 from PIL import Image
-from model.face.detectors import FaceDetectorProvider, FaceDetector
+from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from ui.callback.callback import FrameCallback
 from ui.processing.image import resize_image
 from ui.gui import GUI
@@ -13,7 +13,7 @@ from ui.gui import GUI
 
 DEFAULT_IMAGE_SOURCE: str = 'video'
 DEFAULT_DETECTOR: str = 'realtime'
-DEFAULT_COMPLEX_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'model', 'face', 'mmod_human_face_detector.dat'))
+DEFAULT_COMPLEX_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'models', 'face', 'mmod_human_face_detector.dat'))
 DEFAULT_WIDTH: int = 1024
 DEFAULT_HEIGHT: int = 720
 DEFAULT_FRAME_SIZE: int = 360
@@ -24,7 +24,7 @@ def configuration():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, help='Image source (video)')
     parser.add_argument('--detector', default=DEFAULT_DETECTOR, help='Face detector (realtime or accurate)')
-    parser.add_argument('--detector_path', default=DEFAULT_COMPLEX_DETECTOR_PATH, help='Face detector model path (complex)')
+    parser.add_argument('--detector_path', default=DEFAULT_COMPLEX_DETECTOR_PATH, help='Face detector models path (complex)')
     parser.add_argument('--width', default=DEFAULT_WIDTH, help='Camera resolution (width)')
     parser.add_argument('--height', default=DEFAULT_HEIGHT, help='Camera resolution (height)')
     parser.add_argument('--frame_size', default=DEFAULT_FRAME_SIZE, help='Frame callback resolution (width and height)')
