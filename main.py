@@ -53,8 +53,8 @@ def process_frame(frame, detector: FaceDetector, frame_size: int, face_size: int
         cv2.rectangle(frame, lower_face, upper_face, 255, 1)
         # white: bounding box of face
 
-        dx = (face_size - (x1 - x0)) // 2
-        dy = (face_size - (y1 - y0)) // 2
+        dx = max((face_size - (x1 - x0)) // 2, 0)
+        dy = max((face_size - (y1 - y0)) // 2, 0)
 
         lower_crop = (x0 - dx, y0 - dy)
         upper_crop = (x1 + dx, y1 + dy)
