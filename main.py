@@ -13,7 +13,7 @@ from ui.gui import GUI
 
 DEFAULT_IMAGE_SOURCE: str = 'video'
 DEFAULT_DETECTOR: str = 'realtime'
-DEFAULT_COMPLEX_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'model', 'mmod_human_face_detector.dat'))
+DEFAULT_COMPLEX_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'model', 'face', 'mmod_human_face_detector.dat'))
 DEFAULT_WIDTH: int = 1024
 DEFAULT_HEIGHT: int = 720
 DEFAULT_FRAME_SIZE: int = 360
