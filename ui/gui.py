@@ -82,7 +82,7 @@ class GUI:
         count_of_deltas = len(frame_times) - 1
         fps = 0 if sum_of_deltas == 0 else int(float(count_of_deltas) / sum_of_deltas)
 
-        canvas.configure(text=f'FPS: {fps}')
+        canvas.configure(text=f'Render cycles per second: {fps}')
 
     def __update_all(self, image, fps):
         root = self.__root
