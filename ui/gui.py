@@ -75,7 +75,7 @@ class GUI:
         canvas.configure(image=photo)
         canvas.__cached = photo  # avoid garbage collection
 
-    def __update_fps(self, canvas):
+    def __update_render_cycles(self, canvas):
         frame_times = self.__frames
         frame_times.rotate()
         frame_times[0] = self.time.seconds
@@ -86,12 +86,12 @@ class GUI:
 
         canvas.configure(text=f'Render cycles per second: {fps}')
 
-    def __update_all(self, image, fps):
+    def __update_all(self, image, cycles):
         root = self.__root
         self.__update_image(image)
-        self.__update_fps(fps)
+        self.__update_render_cycles(cycles)
         root.update()
-        root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
+        root.after(self.__delay_ms, func=lambda: self.__update_all(image, cycles))
 
     def __setup_image_source(self):
         self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, self.__delay_ms)
@@ -101,34 +101,51 @@ class GUI:
 
     def __setup_canvas(self):
         self.__root = root = Tk()
+        root.wm_geometry(f'{root.winfo_screenwidth()}x{root.winfo_screenheight()}')
         root.wm_title(self.__title)
 
+        # controls container
+        controls_container = Frame(master=root)
+        controls_container.pack()
+
+        # image container
+        image_container = Frame(master=root)
+        image_container.pack()
+
+        # info container
+        info_container = Frame(master=root)
+        info_container.pack()
+
         # image component
-        image_canvas = Label(master=root)
+        image_canvas = Label(master=image_container)
         image_canvas.pack()
 
-        # FPS label
-        fps_canvas = Label(master=root)
-        fps_canvas.pack()
+        # render cycle label
+        render_cycle_canvas = Label(master=info_container)
+        render_cycle_canvas.pack()
 
-        # dimension info
-        dimensions_canvas = Label(master=root, text=f'Dimensions: {self.width}x{self.height}px')
-        dimensions_canvas.pack()
+        # camera resolution
+        resolution_canvas = Label(master=info_container, text=f'Native resolution: {self.width}x{self.height}px')
+        resolution_canvas.pack()
 
         # gui version info
-        gui_version_canvas = Label(master=root, text=f'TK/TCL: {TkVersion}/{TclVersion}')
+        gui_version_canvas = Label(master=info_container, text=f'TK/TCL: {TkVersion}/{TclVersion}')
         gui_version_canvas.pack()
 
         # api version info
-        api_version_canvas = Label(master=root, text=f'{FaceDetectorProvider.version()}\n{MaskDetectorProvider.version()}')
+        api_version_canvas = Label(master=info_container, text=f'{FaceDetectorProvider.version()}\n{MaskDetectorProvider.version()}')
         api_version_canvas.pack()
 
+        # toggle button
+        toggle_button = Button(master=controls_container, text='Toggle', command=lambda: self.__source.toggle_raw())
+        toggle_button.pack(side=LEFT)
+
         # exit button
-        exit_button = Button(master=root, text='Exit', command=lambda: self.__destroy())
-        exit_button.pack()
+        exit_button = Button(master=controls_container, text='Exit', command=lambda: self.__destroy())
+        exit_button.pack(side=RIGHT)
 
         # setup the update callback
-        root.after(0, func=lambda: self.__update_all(image_canvas, fps_canvas))
+        root.after(0, func=lambda: self.__update_all(image_canvas, render_cycle_canvas))
 
     def __setup(self):
         self.__setup_image_source()

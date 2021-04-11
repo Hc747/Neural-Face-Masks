@@ -31,7 +31,7 @@ COLOUR_BLUE: tuple[int, int, int] = (0, 0, 255)
 COLOUR_WHITE: tuple[int, int, int] = (255, 255, 255)
 COLOUR_BLACK: tuple[int, int, int] = (0, 0, 0)
 
-DEBUG: bool = True
+DEBUG: bool = False
 
 
 def debug(msg):

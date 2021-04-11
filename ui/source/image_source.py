@@ -1,16 +1,20 @@
 import abc
+import cv2
 from threading import Thread
 from typing import Optional
-from PIL.Image import Image
+from PIL import Image
 from ui.callback.callback import FrameCallback
 from ui.state import State
 
 
-ImageFrame = tuple[Optional[Image], int]
+ImageFrame = tuple[Optional[Image.Image], int]
 EMPTY: ImageFrame = (None, 0)
 
 
 class ImageSource(metaclass=abc.ABCMeta):
+
+    __raw: bool = False
+
     @property
     @abc.abstractmethod
     def image(self) -> ImageFrame:
@@ -23,6 +27,19 @@ class ImageSource(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def stop(self):
         pass
+
+    @property
+    def raw(self):
+        return self.__raw
+
+    def toggle_raw(self):
+        self.__raw = not self.__raw
+        print(f'Raw: {self.__raw}')
+
+    @staticmethod
+    def process_raw(frame) -> Image.Image:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        return Image.fromarray(frame)
 
 
 class VideoImageSource(ImageSource):
@@ -56,7 +73,7 @@ class VideoImageSource(ImageSource):
         ok, frame = self.camera.read()
 
         if ok:
-            image = self.__callback.invoke(frame)
+            image = ImageSource.process_raw(frame) if self.raw else self.__callback.invoke(frame)
         else:
             image = None
         self.__image = (image, now)
