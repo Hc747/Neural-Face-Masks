@@ -34,7 +34,6 @@ class ImageSource(metaclass=abc.ABCMeta):
 
     def toggle_raw(self):
         self.__raw = not self.__raw
-        print(f'Raw: {self.__raw}')
 
     @staticmethod
     def process_raw(frame) -> Image.Image:
