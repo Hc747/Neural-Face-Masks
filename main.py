@@ -25,6 +25,12 @@ DEFAULT_FACE_SIZE: int = 224
 IMAGE_SIZE: int = 224
 IMAGE_CHANNELS: int = 3
 
+COLOUR_RED: tuple[int, int, int] = (255, 0, 0)
+COLOUR_GREEN: tuple[int, int, int] = (0, 255, 0)
+COLOUR_BLUE: tuple[int, int, int] = (0, 0, 255)
+COLOUR_WHITE: tuple[int, int, int] = (255, 255, 255)
+COLOUR_BLACK: tuple[int, int, int] = (0, 0, 0)
+
 DEBUG: bool = True
 
 
@@ -58,50 +64,82 @@ def get_class(proba):
         return (proba > 0.5).astype('int32')
 
 
+def bind_lower(value: int, threshold: int) -> tuple[int, int]:
+    if value < threshold:
+        return threshold, threshold - value
+    return value, 0
+
+
+def bind_upper(value: int, threshold: int) -> tuple[int, int]:
+    if value > threshold:
+        return threshold, -(value - threshold)
+    return value, 0
+
+
+def bind(v0: int, v1: int, lower: int, upper: int) -> tuple[int, int]:
+    v0, lo = bind_lower(v0, lower)
+    v1, hi = bind_upper(v1, upper)
+
+    r0, r1 = v0 + hi, v1 + lo
+
+    # debug(f'lo: {lo}, hi: {hi}, v0: {v0}, v1: {v1}, r0: {r0}, r1: {r1}')
+
+    return r0, r1
+
+
 def process_frame(frame, face: FaceDetector, mask, frame_size: int, face_size: int):
-    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # TODO: work on GRAYSCALE..?
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
     # TODO: resize and center without having to convert to and from an Image...
     frame = np.asarray(resize_image(Image.fromarray(frame), frame_size))
 
     detections = face.detect(frame)
     for detection in detections:
-        (x0, y0, width, height) = face.bounding_box(detection)
-        x1, y1 = x0 + width, y0 + height
+        # TODO: ensure crop dimensions are equal to face_size
+        # TODO: ensure coordinates do not fall below 0 or above frame_size, and if so, slide across.
 
-        lower_face_coordinates = (x0, y0)
-        upper_face_coordinates = (x1, y1)
+        (face_left, face_top, face_width, face_height) = face.bounding_box(detection)
+        face_right, face_bottom = face_left + face_width, face_top + face_height
 
-        dx = max((face_size - (x1 - x0)) // 2, 0)
-        dy = max((face_size - (y1 - y0)) // 2, 0)
+        face_left, face_right = bind(face_left, face_right, 0, frame_size)
+        face_top, face_bottom = bind(face_top, face_bottom, 0, frame_size)
 
-        # TODO: ensure equal to size
-        lower_crop_coordinates = (x0 - dx, y0 - dy)
-        upper_crop_coordinates = (x1 + dx, y1 + dy)
+        # TODO: ensure deltas are correct
+        offset_x = face_right - face_left
+        offset_y = face_bottom - face_top
 
+        # TODO: necessary???
+        delta_x = max((face_size - (offset_x if offset_x % 2 == 0 else offset_x + 1)) // 2, 0)
+        delta_y = max((face_size - (offset_y if offset_y % 2 == 0 else offset_y + 1)) // 2, 0)
+
+        crop_left, crop_right = bind(face_left - delta_x, face_right + delta_x, 0, frame_size)
+        crop_top, crop_bottom = bind(face_top - delta_y, face_bottom + delta_y, 0, frame_size)
+
+        lower_face_coordinates, upper_face_coordinates = (face_left, face_top), (face_right, face_bottom)
+        lower_crop_coordinates, upper_crop_coordinates = (crop_left, crop_top), (crop_right, crop_bottom)
+
+        # TODO: ensure dimensions are (face_size, face_size, IMAGE_CHANNELS)
         face_image_boundary = dlib.rectangle(*lower_crop_coordinates, *upper_crop_coordinates)
         face_image = dlib.sub_image(img=frame, rect=face_image_boundary)
-
-        debug(f'face_image_boundary: {face_image_boundary}, shape: {np.shape(face_image)}, face_image: {face_image}')
 
         try:
             prediction = int(mask(np.reshape([face_image], (1, face_size, face_size, IMAGE_CHANNELS)))[0])
         except:
             prediction = None
 
-        # TODO: constants
+        # TODO: use constants
         if prediction == 1:  # unmasked
-            face_colour = (255, 0, 0)
+            face_colour = COLOUR_RED
         elif prediction == 0:  # masked
-            face_colour = (0, 255, 0)
+            face_colour = COLOUR_GREEN
         else:  # unable to make a prediction (exception occurred)
-            face_colour = (255, 255, 255)
+            face_colour = COLOUR_WHITE
 
         cv2.rectangle(frame, lower_face_coordinates, upper_face_coordinates, face_colour, 1)
-        cv2.rectangle(frame, lower_crop_coordinates, upper_crop_coordinates, 0, 1)
-        # black: bounding box cropped image to be fed into the mask detector
+        cv2.rectangle(frame, lower_crop_coordinates, upper_crop_coordinates, COLOUR_BLUE, 1)
 
-        debug(f'frame_size: {frame_size}, face_size: {face_size}, dx: {dx}, dy: {dy}')
+        debug(f'face_image_boundary: {face_image_boundary}, face_image_shape: {np.shape(face_image)}')
+        debug(f'frame_size: {frame_size}, face_size: {face_size}, delta_x: {delta_x}, delta_y: {delta_y}')
         debug(f'lower_face_coordinates: {lower_face_coordinates}, upper_face_coordinates: {upper_face_coordinates}')
         debug(f'lower_crop_coordinates: {lower_crop_coordinates}, upper_crop_coordinates: {upper_crop_coordinates}')
         debug(f'prediction: {prediction}')
