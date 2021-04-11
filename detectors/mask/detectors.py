@@ -11,9 +11,10 @@ LOSS_FN: str = 'binary_crossentropy'  #sparse_categorical_crossentropy
 CLASSES: int = 1
 CLASS_MODE: str = 'binary'
 
-print(f'Tensorflow API Version: {tf.__version__}')
-print(f'Keras API Version: {keras.__version__}')
-print(f'GPUS: {tf.config.list_physical_devices("GPU")}')
+class MaskDetectorProvider:
+    @staticmethod
+    def version() -> str:
+        return f'Mask detector: TensorFlow - {tf.__version__}, Keras: {keras.__version__}, GPU(s): {tf.config.list_physical_devices("GPU")}'
 
 
 def create_model(size: int, channels: int):

@@ -23,6 +23,10 @@ class FaceDetector:
 
 class FaceDetectorProvider:
     @staticmethod
+    def version() -> str:
+        return f'Face detector: dlib - {dlib.__version__}'
+
+    @staticmethod
     def simple() -> FaceDetector:
         return FaceDetector(dlib.get_frontal_face_detector(), lambda detection: detection)
 

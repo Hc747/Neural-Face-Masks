@@ -3,6 +3,8 @@ from typing import Optional
 from collections import deque
 from tkinter import *
 from PIL import Image, ImageTk
+from detectors.face.detectors import FaceDetectorProvider
+from detectors.mask.detectors import MaskDetectorProvider
 from timing.time_source import TimeSource
 from ui.callback.callback import FrameCallback
 from ui.source.image_source import ImageSource, VideoImageSource
@@ -91,7 +93,7 @@ class GUI:
         root.update()
         root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
 
-    def __setup_source(self):
+    def __setup_image_source(self):
         self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, self.__delay_ms)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
@@ -113,9 +115,13 @@ class GUI:
         dimensions_canvas = Label(master=root, text=f'Dimensions: {self.width}x{self.height}px')
         dimensions_canvas.pack()
 
-        # version info
-        version_canvas = Label(master=root, text=f'TK/TCL: {TkVersion}/{TclVersion}')
-        version_canvas.pack()
+        # gui version info
+        gui_version_canvas = Label(master=root, text=f'TK/TCL: {TkVersion}/{TclVersion}')
+        gui_version_canvas.pack()
+
+        # api version info
+        api_version_canvas = Label(master=root, text=f'{FaceDetectorProvider.version()}\n{MaskDetectorProvider.version()}')
+        api_version_canvas.pack()
 
         # exit button
         exit_button = Button(master=root, text='Exit', command=lambda: self.__destroy())
@@ -125,10 +131,10 @@ class GUI:
         root.after(0, func=lambda: self.__update_all(image_canvas, fps_canvas))
 
     def __setup(self):
-        self.__setup_source()
+        self.__setup_image_source()
         self.__setup_canvas()
 
-    def __destroy_source(self):
+    def __destroy_image_source(self):
         cv2.destroyAllWindows()
         self.__source.stop()
         self.source = None
@@ -138,5 +144,5 @@ class GUI:
         self.__root = None
 
     def __destroy(self):
-        self.__destroy_source()
+        self.__destroy_image_source()
         self.__destroy_canvas()

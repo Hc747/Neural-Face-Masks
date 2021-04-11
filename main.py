@@ -5,7 +5,7 @@ import dlib
 import numpy as np
 from PIL import Image
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
-from detectors.mask.detectors import build, training_generator, testing_generator
+from detectors.mask.detectors import build, training_generator, testing_generator, MaskDetectorProvider
 from ui.callback.callback import FrameCallback
 from ui.processing.image import resize_image
 from ui.gui import GUI
@@ -169,6 +169,8 @@ def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
 if __name__ == '__main__':
     args, _ = configuration()
     debug(f'Application configuration: {args}')
+    debug(FaceDetectorProvider.version())
+    debug(MaskDetectorProvider.version())
 
     masks = get_mask_detector(args)
     faces: FaceDetector = get_face_detector(args)
