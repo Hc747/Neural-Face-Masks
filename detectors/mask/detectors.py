@@ -60,12 +60,26 @@ training_provider = ImageDataGenerator(
 testing_provider = ImageDataGenerator(rescale=1./255)
 
 
-def training_generator(directory: str, size: int):
-    return training_provider.flow_from_directory(directory=directory, target_size=(size, size), seed=RANDOM_STATE, class_mode=CLASS_MODE)
+def training_generator(directory: str, size: int, channels: int):
+    color_mode: str = 'grayscale' if channels == 1 else 'rgb'
+    return testing_provider.flow_from_directory(
+        directory=directory,
+        color_mode=color_mode,
+        target_size=(size, size),
+        seed=RANDOM_STATE,
+        class_mode=CLASS_MODE
+    )
 
 
-def testing_generator(directory: str, size: int):
-    return testing_provider.flow_from_directory(directory=directory, target_size=(size, size), seed=RANDOM_STATE, class_mode=CLASS_MODE)
+def testing_generator(directory: str, size: int, channels: int):
+    color_mode: str = 'grayscale' if channels == 1 else 'rgb'
+    return testing_provider.flow_from_directory(
+        directory=directory,
+        color_mode=color_mode,
+        target_size=(size, size),
+        seed=RANDOM_STATE,
+        class_mode=CLASS_MODE
+    )
 
 
 def build(path: str, size: int, channels: int, training, validation=None):
@@ -82,7 +96,6 @@ def build(path: str, size: int, channels: int, training, validation=None):
         model.fit(
             training,
             validation_data=validation,
-            steps_per_epoch=100,
             epochs=10,
             validation_steps=40,
             verbose=2,

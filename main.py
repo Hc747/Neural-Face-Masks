@@ -85,7 +85,7 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, face_size: i
         debug(f'face_image_boundary: {face_image_boundary}, shape: {np.shape(face_image)}, face_image: {face_image}')
 
         try:
-            prediction = int(mask(np.reshape([face_image], (1, face_size, face_size, 3)))[0])
+            prediction = int(mask(np.reshape([face_image], (1, face_size, face_size, IMAGE_CHANNELS)))[0])
         except:
             prediction = None
 
@@ -117,8 +117,8 @@ def get_face_detector(config) -> FaceDetector:
 
 def get_mask_detector(config):
     dataset = os.path.join('.', 'data', 'kaggle', 'ashishjangra27', 'face-mask-12k-images-dataset')
-    training = training_generator(os.path.join(dataset, 'training'), IMAGE_SIZE)
-    validation = testing_generator(os.path.join(dataset, 'validation'), IMAGE_SIZE)
+    training = training_generator(os.path.join(dataset, 'training'), IMAGE_SIZE, IMAGE_CHANNELS)
+    validation = testing_generator(os.path.join(dataset, 'validation'), IMAGE_SIZE, IMAGE_CHANNELS)
     return build(config.mask_detector_path, IMAGE_SIZE, IMAGE_CHANNELS, training, validation)
 
 
