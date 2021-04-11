@@ -1,10 +1,12 @@
 import abc
 from threading import Thread
 from typing import Optional
+from PIL.Image import Image
+from ui.callback.callback import FrameCallback
 from ui.state import State
 
 
-ImageFrame = tuple[Optional[object], int]
+ImageFrame = tuple[Optional[Image], int]
 EMPTY: ImageFrame = (None, 0)
 
 
@@ -28,10 +30,12 @@ class VideoImageSource(ImageSource):
     __state: State = State.UNINITIALISED
     __thread: Optional[Thread] = None
     __image: ImageFrame = EMPTY
+    __callback: FrameCallback
     __last: int = 0
 
-    def __init__(self, camera, time, delay):
+    def __init__(self, camera, callback: FrameCallback, time, delay):
         self.__camera = camera
+        self.__callback = callback
         self.__time = time
         self.__delay = delay
 
@@ -50,7 +54,11 @@ class VideoImageSource(ImageSource):
         self.__last = now
 
         ok, frame = self.camera.read()
-        image = frame if ok else None
+
+        if ok:
+            image = self.__callback.invoke(frame)
+        else:
+            image = None
         self.__image = (image, now)
 
     def __run(self):

@@ -61,14 +61,13 @@ class GUI:
         self.__state = State.UNINITIALISED
 
     def __update_image(self, canvas):
-        frame, timestamp = self.__source.image
+        image, timestamp = self.__source.image
 
-        if frame is None or self.__last >= timestamp:
+        if image is None or self.__last >= timestamp:
             return
 
         self.__last = timestamp
 
-        image = self.__callback.invoke(frame)
         photo = ImageTk.PhotoImage(image=image)
 
         canvas.configure(image=photo)
@@ -93,7 +92,7 @@ class GUI:
         root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
 
     def __setup_source(self):
-        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.time, self.__delay_ms)
+        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, self.__delay_ms)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
         source.start()
