@@ -25,7 +25,7 @@ DEFAULT_FACE_SIZE: int = 224
 IMAGE_SIZE: int = 224
 IMAGE_CHANNELS: int = 3
 
-DEBUG: bool = False
+DEBUG: bool = True
 
 
 def debug(msg):
