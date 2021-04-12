@@ -1,5 +1,4 @@
 import os.path
-
 import tensorflow as tf
 from keras_preprocessing.image import ImageDataGenerator
 from tensorflow import keras
@@ -7,9 +6,10 @@ from tensorflow import keras
 RANDOM_STATE: int = 694_201_337
 ACTIVATION_FN: str = 'relu'
 OUTPUT_FN: str = 'sigmoid'  # softmax
-LOSS_FN: str = 'binary_crossentropy'  #sparse_categorical_crossentropy
+LOSS_FN: str = 'binary_crossentropy'  # sparse_categorical_crossentropy
 CLASSES: int = 1
 CLASS_MODE: str = 'binary'
+
 
 class MaskDetectorProvider:
     @staticmethod
@@ -98,7 +98,7 @@ def build(path: str, size: int, channels: int, training, validation=None):
             training,
             validation_data=validation,
             epochs=10,
-            validation_steps=40,
+            validation_steps=10,
             verbose=2,
             callbacks=[checkpoint]
         )
