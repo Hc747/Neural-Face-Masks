@@ -11,3 +11,4 @@ COLOUR_BLACK: tuple[int, int, int] = (0, 0, 0)
 
 FONT_SCALE: float = 0.4
 FONT_FACE: int = FONT_HERSHEY_SIMPLEX
+TEXT_OFFSET: int = 10

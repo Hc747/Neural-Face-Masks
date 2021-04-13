@@ -148,16 +148,19 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
             crop_colour = COLOUR_WHITE
             face_colour = COLOUR_WHITE
 
-        label = f'{idx + 1}: {category}'
+        index: int = idx + 1
+        face_label: str = f'{index}: {category}'
+        boundary_label: str = f'{index}: Boundary'
 
         # draw face bounding box
         cv2.rectangle(frame, lt_face_coordinates, rb_face_coordinates, face_colour, 1)
         # draw classification label next to face bounding box
-        cv2.putText(frame, text=label, org=(lt_face_coordinates[0], lt_face_coordinates[1] - 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=face_colour)
+        cv2.putText(frame, text=face_label, org=(lt_face_coordinates[0], lt_face_coordinates[1] - TEXT_OFFSET), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=face_colour)
         # draw crop bounding box
         cv2.rectangle(frame, lt_crop_coordinates, rb_crop_coordinates, crop_colour, 1)
         # draw info label next to crop bounding box
-        cv2.putText(frame, text=f'Crop box: {idx + 1}', org=(lt_crop_coordinates[0], lt_crop_coordinates[1] - 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=crop_colour)
+        crop_label_offset: int = int(-TEXT_OFFSET * 1.5) if np.allclose(lt_crop_coordinates, lt_face_coordinates, atol=TEXT_OFFSET//2) else TEXT_OFFSET
+        cv2.putText(frame, text=boundary_label, org=(lt_crop_coordinates[0], lt_crop_coordinates[1] - crop_label_offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=crop_colour)
 
         debug(f'face_image_boundary: (l,t,r,b){face_image_boundary}, face_image_shape: {np.shape(face_image)}')
         debug(f'frame_size: {frame_size}, mask_input_size: {mask_input_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
