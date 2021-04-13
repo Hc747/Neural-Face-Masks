@@ -1,11 +1,8 @@
 import os
-import timeit
-
 import cv2
 import dlib
 import numpy as np
 from PIL import Image
-
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from detectors.mask.detectors import build, training_generator, testing_generator, MaskDetectorProvider
 from ui.callback.callback import FrameCallback
