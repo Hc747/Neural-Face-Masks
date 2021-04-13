@@ -186,6 +186,7 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
         debug(lambda: f'prediction: {prediction}')
 
     # TODO: flag to render face image (for debugging etc)
+    # TODO: return tuple (frame, [... faces]) ?
     return Image.fromarray(frame)
 
 
