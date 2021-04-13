@@ -2,7 +2,7 @@ import argparse
 import os
 from distutils.util import strtobool
 
-DEFAULT_TITLE: str = 'Face the facts'
+DEFAULT_TITLE: str = 'FTF: Face Mask Analyser'
 DEFAULT_IMAGE_SOURCE: str = 'video'
 DEFAULT_DETECTOR: str = 'realtime'
 DEFAULT_FACE_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'models', 'face', 'mmod_human_face_detector.dat'))
