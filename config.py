@@ -15,7 +15,7 @@ DEFAULT_DEBUG: bool = True
 DEFAULT_DISABLE_ASSERTIONS: bool = True
 
 
-def boolean(v: str) -> bool:
+def __boolean(v: str) -> bool:
     return bool(strtobool(v))
 
 
@@ -26,14 +26,17 @@ __parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, help='Image sour
 __parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, help='Face detector (realtime or accurate)')
 __parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, help='Face detector models path')
 __parser.add_argument('--mask_detector_path', default=DEFAULT_MASK_DETECTOR_PATH, help='Mask detector models path')
-__parser.add_argument('--debug', type=boolean, default=DEFAULT_DEBUG, help='Print debug statements (True/False)')
-__parser.add_argument('--disable_assertions', type=boolean, default=DEFAULT_DISABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
+__parser.add_argument('--debug', type=__boolean, default=DEFAULT_DEBUG, help='Print debug statements (True/False)')
+__parser.add_argument('--disable_assertions', type=__boolean, default=DEFAULT_DISABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
 __parser.add_argument('--title', default=DEFAULT_TITLE, help='Application GUI title')
 __parser.add_argument('--width', default=DEFAULT_WIDTH, help='Camera resolution (width)')
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, help='Camera resolution (height)')
 __parser.add_argument('--frame_size', default=DEFAULT_FRAME_SIZE, help='Frame callback resolution (width and height)')
 
+# publicly exported
 args = __parser.parse_args()
+
+
 __debug: bool = args.debug
 __disable_assertions: bool = args.disable_assertions
 
@@ -42,6 +45,7 @@ def is_debug() -> bool:
     return __debug
 
 
+# export debug statement or no-op
 if __debug:
     def debug(message):
         print(message())
@@ -49,6 +53,7 @@ else:
     def debug(message):
         pass
 
+# export expect statement or no-op
 if __disable_assertions:
     def expect(condition, message):
         pass
