@@ -1,5 +1,6 @@
 import argparse
 import os
+from distutils.util import strtobool
 
 DEFAULT_TITLE: str = 'Face the facts'
 DEFAULT_IMAGE_SOURCE: str = 'video'
@@ -13,6 +14,10 @@ DEFAULT_FACE_SIZE: int = 224
 DEFAULT_DEBUG: bool = True
 DEFAULT_DISABLE_ASSERTIONS: bool = True
 
+
+def boolean(v: str) -> bool:
+    return bool(strtobool(v))
+
 # TODO: type safety
 # TODO: mutual exclusion
 __parser = argparse.ArgumentParser()
@@ -20,8 +25,8 @@ __parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, help='Image sour
 __parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, help='Face detector (realtime or accurate)')
 __parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, help='Face detector models path')
 __parser.add_argument('--mask_detector_path', default=DEFAULT_MASK_DETECTOR_PATH, help='Mask detector models path')
-__parser.add_argument('--debug', default=DEFAULT_DEBUG, help='Print debug statements (True/False)')
-__parser.add_argument('--disable_assertions', default=DEFAULT_DISABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
+__parser.add_argument('--debug', type=boolean, default=DEFAULT_DEBUG, help='Print debug statements (True/False)')
+__parser.add_argument('--disable_assertions', type=boolean, default=DEFAULT_DISABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
 __parser.add_argument('--title', default=DEFAULT_TITLE, help='Application GUI title')
 __parser.add_argument('--width', default=DEFAULT_WIDTH, help='Camera resolution (width)')
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, help='Camera resolution (height)')
@@ -34,7 +39,7 @@ __disable_assertions: bool = args.disable_assertions
 
 def debug(message):
     if __debug:
-        print(message)
+        print(message())
 
 
 def expect(condition, message):

@@ -1,8 +1,12 @@
 import os
+import timeit
+
 import cv2
 import dlib
 import numpy as np
 from PIL import Image
+from numba import jit
+
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from detectors.mask.detectors import build, training_generator, testing_generator, MaskDetectorProvider
 from ui.callback.callback import FrameCallback
@@ -64,6 +68,20 @@ def pad(value: int, size: int = 3) -> str:
     return f'{value}'.ljust(size)
 
 
+def delta(v: int) -> int:
+    """
+    :param v: the value to calculate the delta (padding on each side) of
+    :return:
+    if v < 0:
+        TODO: documentation
+    if v > 0:
+        TODO: documentation
+    if v == 0:
+        TODO: documentation
+    """
+    return -v // 2 if v < 0 else v // 2 if v > 0 else 0
+
+
 def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_size: int):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     # TODO: resize and center without having to convert to and from an Image...
@@ -98,24 +116,8 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
             lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_size}'
         )
 
-        mask_dx = mask_input_size - face_width
-        mask_dy = mask_input_size - face_height
-
-        # calculate dx
-        if mask_dx < 0:  # face is wider than the mask_input_size
-            dx = -mask_dx // 2
-        elif mask_dx > 0:  # face is narrower than the mask_input_size
-            dx = mask_dx // 2
-        else:  # the face is the same width as the mask_input_size
-            dx = 0
-
-        # calculate dy
-        if mask_dy < 0:  # face is taller than the mask_input_size
-            dy = -mask_dy // 2
-        elif mask_dy > 0:  # the face is shorter than the mask_input_size
-            dy = mask_dy // 2
-        else:  # the face is the same height as the mask_input_size
-            dy = 0
+        dx: int = delta(mask_input_size - face_width)
+        dy: int = delta(mask_input_size - face_height)
 
         crop_left, crop_right = face_left - dx, face_right + dx
         offset_x = (mask_input_size - (crop_right - crop_left))
@@ -175,18 +177,19 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
         crop_label_offset: int = int(-TEXT_OFFSET * 1.5) if np.allclose(lt_crop_coordinates, lt_face_coordinates, atol=TEXT_OFFSET//2) else TEXT_OFFSET
         cv2.putText(frame, text=boundary_label, org=(lt_crop_coordinates[0], lt_crop_coordinates[1] - crop_label_offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=crop_colour)
 
-        debug(f'face_image_boundary: (l,t,r,b){face_image_boundary}, face_image_shape: {np.shape(face_image)}')
-        debug(f'frame_size: {frame_size}, mask_input_size: {mask_input_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
-        debug('---face---')
-        debug(f'[L {pad(lt_face_coordinates[0])}, R {pad(rb_face_coordinates[0])}, W {pad(face_width)}]')
-        debug(f'[T {pad(lt_face_coordinates[1])}, B {pad(rb_face_coordinates[1])}, H {pad(face_height)}]')
-        debug('---face---')
-        debug('---mask---')
-        debug(f'[L {pad(lt_crop_coordinates[0])}, R {pad(rb_crop_coordinates[0])}, W {pad(mask_dx)}]')
-        debug(f'[T {pad(lt_crop_coordinates[1])}, B {pad(rb_crop_coordinates[1])}, H {pad(mask_dy)}]')
-        debug('---mask---')
-        debug(f'prediction: {prediction}')
+        debug(lambda: f'face_image_boundary: (l,t,r,b){face_image_boundary}, face_image_shape: {np.shape(face_image)}')
+        debug(lambda: f'frame_size: {frame_size}, mask_input_size: {mask_input_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
+        debug(lambda: '---face---')
+        debug(lambda: f'[L {pad(lt_face_coordinates[0])}, R {pad(rb_face_coordinates[0])}, W {pad(face_width)}]')
+        debug(lambda: f'[T {pad(lt_face_coordinates[1])}, B {pad(rb_face_coordinates[1])}, H {pad(face_height)}]')
+        debug(lambda: '---face---')
+        debug(lambda: '---mask---')
+        debug(lambda: f'[L {pad(lt_crop_coordinates[0])}, R {pad(rb_crop_coordinates[0])}]')
+        debug(lambda: f'[T {pad(lt_crop_coordinates[1])}, B {pad(rb_crop_coordinates[1])}]')
+        debug(lambda: '---mask---')
+        debug(lambda: f'prediction: {prediction}')
 
+    # TODO: flag to render face image (for debugging etc)
     return Image.fromarray(frame)
 
 
@@ -210,9 +213,9 @@ def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
 
 
 if __name__ == '__main__':
-    debug(f'Application configuration: {args}')
-    debug(FaceDetectorProvider.version())
-    debug(MaskDetectorProvider.version())
+    debug(lambda: f'Application configuration: {args}')
+    debug(FaceDetectorProvider.version)
+    debug(MaskDetectorProvider.version)
 
     masks = get_mask_detector(args)
     faces: FaceDetector = get_face_detector(args)
