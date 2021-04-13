@@ -3,6 +3,8 @@ import cv2
 from threading import Thread
 from typing import Optional
 from PIL import Image
+from config import debug
+from timing.time_source import TimeSource
 from ui.callback.callback import FrameCallback
 from ui.state import State
 
@@ -47,9 +49,11 @@ class VideoImageSource(ImageSource):
     __thread: Optional[Thread] = None
     __image: ImageFrame = EMPTY
     __callback: FrameCallback
+    __time: TimeSource
+    __delay: int
     __last: int = 0
 
-    def __init__(self, camera, callback: FrameCallback, time, delay):
+    def __init__(self, camera, callback: FrameCallback, time: TimeSource, delay):
         self.__camera = camera
         self.__callback = callback
         self.__time = time
@@ -72,7 +76,14 @@ class VideoImageSource(ImageSource):
         ok, frame = self.camera.read()
 
         if ok:
-            image = ImageSource.process_raw(frame) if self.raw else self.__callback.invoke(frame)
+            if self.raw:
+                image = ImageSource.process_raw(frame)
+            else:
+                try:
+                    image = self.__callback.invoke(frame)
+                except AssertionError as e:
+                    image = None
+                    debug(f'Assertion failed: {e}')
         else:
             image = None
         self.__image = (image, now)

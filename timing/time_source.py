@@ -3,13 +3,13 @@ import time as timing
 
 class TimeSource:
     @property
-    def seconds(self):
+    def seconds(self) -> float:
         return timing.time()
 
     @property
-    def millis(self):
+    def millis(self) -> int:
         return int(self.seconds * 1000)
 
     @property
-    def nanos(self):
+    def nanos(self) -> int:
         return timing.time_ns()

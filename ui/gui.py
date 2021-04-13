@@ -22,6 +22,7 @@ class GUI:
     __source = Optional[ImageSource]
     __delay_ms: int = 10
     __last: int = -1
+    __frames: deque[float]
 
     def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0, history: int = 5):
         self.__title = title
@@ -76,15 +77,17 @@ class GUI:
         canvas.__cached = photo  # avoid garbage collection
 
     def __update_render_cycles(self, canvas):
-        frame_times = self.__frames
-        frame_times.rotate()
-        frame_times[0] = self.time.seconds
-
-        sum_of_deltas = frame_times[0] - frame_times[-1]
-        count_of_deltas = len(frame_times) - 1
-        fps = 0 if sum_of_deltas == 0 else int(float(count_of_deltas) / sum_of_deltas)
-
+        fps = self.__calculate_render_cycles()
         canvas.configure(text=f'Render cycles per second: {fps}')
+
+    def __calculate_render_cycles(self) -> int:
+        frames = self.__frames
+        frames.rotate()
+        frames[0] = self.__time.seconds
+
+        sum_of_deltas = frames[0] - frames[-1]
+        count_of_deltas = len(frames) - 1
+        return 0 if sum_of_deltas == 0 else int(float(count_of_deltas) / sum_of_deltas)
 
     def __update_all(self, image, cycles):
         root = self.__root
