@@ -62,7 +62,7 @@ def bind(v0: int, v1: int, lower: int, upper: int) -> tuple[int, int]:
 
 # TODO: documentation
 def pad(value: int, size: int = 3) -> str:
-    return f'{value}'.ljust(3)
+    return f'{value}'.ljust(size)
 
 
 def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_size: int):
