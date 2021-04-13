@@ -18,6 +18,7 @@ DEFAULT_DISABLE_ASSERTIONS: bool = True
 def boolean(v: str) -> bool:
     return bool(strtobool(v))
 
+
 # TODO: type safety
 # TODO: mutual exclusion
 __parser = argparse.ArgumentParser()
@@ -37,12 +38,20 @@ __debug: bool = args.debug
 __disable_assertions: bool = args.disable_assertions
 
 
-def debug(message):
-    if __debug:
+def is_debug() -> bool:
+    return __debug
+
+
+if __debug:
+    def debug(message):
         print(message())
+else:
+    def debug(message):
+        pass
 
-
-def expect(condition, message):
-    if __disable_assertions:
-        return
-    assert condition(), message()
+if __disable_assertions:
+    def expect(condition, message):
+        pass
+else:
+    def expect(condition, message):
+        assert condition(), message()
