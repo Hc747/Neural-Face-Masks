@@ -5,7 +5,6 @@ import cv2
 import dlib
 import numpy as np
 from PIL import Image
-from numba import jit
 
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from detectors.mask.detectors import build, training_generator, testing_generator, MaskDetectorProvider
