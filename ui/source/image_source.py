@@ -104,8 +104,7 @@ class VideoImageSource(ImageSource):
         if self.__state != State.UNINITIALISED:
             return
         self.__state = State.INTERMEDIATE
-        self.__thread = thread = Thread(target=self.__run)
-        thread.daemon = True
+        self.__thread = thread = Thread(target=self.__run, daemon=True)
         self.__state = State.RUNNING
         thread.start()
 

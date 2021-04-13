@@ -85,7 +85,14 @@ def testing_generator(directory: str, size: int, channels: int):
 
 def build(path: str, size: int, channels: int, training, validation=None):
     checkpoint_directory = os.path.dirname(path)
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=path, save_weights_only=True, verbose=1)
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(
+        filepath=path,
+        monitor='val_loss',
+        mode='auto',
+        save_weights_only=False,
+        save_best_only=True,
+        verbose=1
+    )
 
     model = create_model(size, channels)
     latest = tf.train.latest_checkpoint(checkpoint_directory)
