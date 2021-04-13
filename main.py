@@ -17,7 +17,6 @@ from config import args, debug, expect
 # TODO: relocate..?
 PREDICTION_MASKED: int = 0
 PREDICTION_UNMASKED: int = 1
-DISABLE_ASSERTS: bool = args.disable_assertions
 
 
 def evaluate_prediction(probabilities: [float]) -> tuple[int, float]:
