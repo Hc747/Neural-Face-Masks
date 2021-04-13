@@ -41,23 +41,27 @@ def evaluate_prediction(probabilities: [float]) -> tuple[int, float]:
     return index, confidence
 
 
+# TODO: documentation
 def bind_lower(value: int, threshold: int) -> tuple[int, int]:
     adjustment = threshold - value if value < threshold else 0
     return value, adjustment
 
 
+# TODO: documentation
 def bind_upper(value: int, threshold: int) -> tuple[int, int]:
     adjustment = -(value - threshold) if value > threshold else 0
     return value, adjustment
 
 
+# TODO: documentation
 def bind(v0: int, v1: int, lower: int, upper: int) -> tuple[int, int]:
     v0, lo = bind_lower(v0, lower)
     v1, hi = bind_upper(v1, upper)
     return v0 + hi, v1 + lo
 
 
-def pad(value: int, size: int = 3):
+# TODO: documentation
+def pad(value: int, size: int = 3) -> str:
     return f'{value}'.ljust(3)
 
 
