@@ -9,7 +9,7 @@ from ui.callback.callback import FrameCallback
 from ui.processing.image import resize_image
 from ui.gui import GUI
 from constants import *
-from config import args, debug
+from config import args, debug, expect
 
 # TODO: logging
 # TODO: JIT compilation?
@@ -82,16 +82,22 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
         # THRESHOLDS
         # top, left = 0,0
         # bottom, right = frame_size, frame_size
-        assert DISABLE_ASSERTS or 0 < mask_input_size < frame_size, \
-            f'(0 < face < frame) = 0 < {mask_input_size} < {frame_size}'
+        expect(
+            lambda: 0 < mask_input_size < frame_size,
+            lambda: f'(0 < face < frame) = 0 < {mask_input_size} < {frame_size}'
+        )
 
         face_left, face_right = bind(face_left, face_right, 0, frame_size)
-        assert DISABLE_ASSERTS or 0 <= face_left <= face_right <= frame_size, \
-            f'(0 <= left <= right <= frame) = 0 <= {face_left} <= {face_right} <= {frame_size}'
+        expect(
+            lambda: 0 <= face_left <= face_right <= frame_size,
+            lambda: f'(0 <= left <= right <= frame) = 0 <= {face_left} <= {face_right} <= {frame_size}'
+        )
 
         face_top, face_bottom = bind(face_top, face_bottom, 0, frame_size)
-        assert DISABLE_ASSERTS or 0 <= face_top <= face_bottom <= frame_size, \
-            f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_size}'
+        expect(
+            lambda: 0 <= face_top <= face_bottom <= frame_size,
+            lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_size}'
+        )
 
         mask_dx = mask_input_size - face_width
         mask_dy = mask_input_size - face_height
@@ -119,12 +125,16 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
         offset_y = (mask_input_size - (crop_bottom - crop_top))
 
         crop_left, crop_right = bind(crop_left - offset_x, crop_right, 0, frame_size)
-        assert DISABLE_ASSERTS or (crop_right - crop_left) == mask_input_size, \
-            f'(right - left == mask) = ({crop_right} - {crop_left} == {mask_input_size}) = {crop_right - crop_left} == {mask_input_size}'
+        expect(
+            lambda: (crop_right - crop_left) == mask_input_size,
+            lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {mask_input_size}) = {crop_right - crop_left} == {mask_input_size}'
+        )
 
         crop_top, crop_bottom = bind(crop_top - offset_y, crop_bottom, 0, frame_size)
-        assert DISABLE_ASSERTS or (crop_bottom - crop_top) == mask_input_size, \
-            f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {mask_input_size}) = {crop_bottom - crop_top} == {mask_input_size}'
+        expect(
+            lambda: (crop_bottom - crop_top) == mask_input_size,
+            lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {mask_input_size}) = {crop_bottom - crop_top} == {mask_input_size}'
+        )
 
         lt_face_coordinates, rb_face_coordinates = (face_left, face_top), (face_right, face_bottom)
         lt_crop_coordinates, rb_crop_coordinates = (crop_left, crop_top), (crop_right - 1, crop_bottom - 1)

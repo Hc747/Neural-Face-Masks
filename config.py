@@ -29,6 +29,7 @@ __parser.add_argument('--frame_size', default=DEFAULT_FRAME_SIZE, help='Frame ca
 
 args = __parser.parse_args()
 __debug: bool = args.debug
+__disable_assertions: bool = args.disable_assertions
 
 
 def debug(message):
@@ -36,3 +37,7 @@ def debug(message):
         print(message)
 
 
+def expect(condition, message):
+    if __disable_assertions:
+        return
+    assert condition(), message()
