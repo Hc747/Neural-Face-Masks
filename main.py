@@ -14,18 +14,12 @@ from config import args, debug
 # TODO: logging
 # TODO: JIT compilation?
 
-# TODO: externalise..?
-# def get_face(frame, detection, detector: FaceDetector):
-#     # TODO: return Image?
-#     # TODO: upscale / resize for input to mask detector...
-#     return dlib.sub_image(img=frame, rect=detector.rect(detection))
 
-
-def get_class(proba):
-    if proba.shape[-1] > 1:
-        return proba.argmax(axis=-1)
-    else:
-        return (proba > 0.5).astype('int32')
+def get_class(probabilities: [float]):
+    values = np.asarray(probabilities)
+    if values.shape[-1] > 1:
+        return values.argmax(axis=-1)
+    return (values > 0.5).astype('int32')
 
 
 def bind_lower(value: int, threshold: int) -> tuple[int, int]:
@@ -120,10 +114,11 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
 
         face_image_boundary = dlib.rectangle(*lt_crop_coordinates, *rb_crop_coordinates)
         face_image = dlib.sub_image(img=frame, rect=face_image_boundary)
+        (width, height, channels) = np.shape(face_image)
 
-        try:
+        if width == mask_input_size and height == mask_input_size and channels == IMAGE_CHANNELS:
             crop_colour = COLOUR_BLUE
-            prediction = int(mask(np.reshape([face_image], (1, mask_input_size, mask_input_size, IMAGE_CHANNELS)))[0])
+            prediction = get_class(mask(np.reshape([face_image], (1, mask_input_size, mask_input_size, IMAGE_CHANNELS))))
 
             if prediction == PREDICTION_MASKED:
                 face_colour = COLOUR_GREEN
@@ -131,7 +126,7 @@ def process_frame(frame, face: FaceDetector, mask, frame_size: int, mask_input_s
                 face_colour = COLOUR_RED
             else:
                 face_colour = COLOUR_WHITE
-        except:
+        else:
             prediction = None
             crop_colour = COLOUR_WHITE
             face_colour = COLOUR_WHITE
