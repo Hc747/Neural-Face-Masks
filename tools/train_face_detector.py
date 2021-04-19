@@ -19,12 +19,14 @@ DEFAULT_OUTPUT_LOCATION: str = os.path.join(__root, 'models', 'phase1', 'checkpo
 DEFAULT_INPUT_LOCATION: str = os.path.join(__root, 'data', 'kaggle', 'andrewmvd')
 DEFAULT_EPOCHS: int = 10
 DEFAULT_NETWORK: str = 'vgg16'
+DEFAULT_DUPLICATE: bool = False
 
 __parser = argparse.ArgumentParser()
 __parser.add_argument('--output', default=DEFAULT_OUTPUT_LOCATION, type=str, help='The model output directory')
 __parser.add_argument('--input', default=DEFAULT_INPUT_LOCATION, type=str, help='The dataset input directory')
 __parser.add_argument('--network', default=DEFAULT_NETWORK, type=str, help='The network architecture to use for bootstrapping')
 __parser.add_argument('--epochs', default=DEFAULT_EPOCHS, type=int, help='The number of iterations')
+__parser.add_argument('--duplicate', default=DEFAULT_DUPLICATE, type=bool, help='Use duplicate images')
 
 args = __parser.parse_args()
 
@@ -72,10 +74,13 @@ for index, file in enumerate(os.listdir(annotation_directory)):
         labels.append(label)
         boundaries.append(coordinates)
 
+        if not args.duplicate:
+            break
+
 images = np.asarray(images)
 labels = np.asarray(labels)
 boundaries = np.asarray(boundaries)
-classes = np.unique(labels)
+classes, totals = np.unique(labels, return_counts=True)
 
 encoder = LabelEncoder()
 labels = encoder.fit_transform(labels)
@@ -83,7 +88,7 @@ labels = to_categorical(labels)
 
 # TODO: store as HD5 object..?
 
-print(f'Images: {len(images)}, Labels: {len(labels)}, Boundaries: {len(boundaries)}, Classes: {classes}')
+print(f'Images: {len(images)}, Labels: {len(labels)}, Boundaries: {len(boundaries)}, Classes: {dict(zip(classes, totals))}')
 print(labels[0:3])
 print(boundaries[0:3])
 
