@@ -38,13 +38,16 @@ def create_model(size: int, channels: int):
         tf.keras.layers.Dense(512, activation=ACTIVATION_FN),
         tf.keras.layers.Dense(CLASSES, activation=OUTPUT_FN)
     ])
+    return model
 
+
+def prepare(model):
     model.compile(
         optimizer='adam',
         loss=LOSS_FN,
         metrics=['accuracy']
     )
-
+    model.summary()
     return model
 
 
@@ -84,7 +87,11 @@ def testing_generator(directory: str, size: int, channels: int):
 
 
 def build(path: str, size: int, channels: int, training, validation=None):
-    checkpoint_directory = os.path.dirname(path)
+    model = tf.keras.models.load_model(path)
+
+    if model is not None:
+        return prepare(model)
+
     checkpoint = tf.keras.callbacks.ModelCheckpoint(
         filepath=path,
         monitor='val_loss',
@@ -94,22 +101,15 @@ def build(path: str, size: int, channels: int, training, validation=None):
         verbose=1
     )
 
-    model = create_model(size, channels)
-    latest = tf.train.latest_checkpoint(checkpoint_directory)
+    model = prepare(create_model(size, channels))
 
-    if latest is not None:
-        model.load_weights(latest)
-    else:
-        # TODO: change logic...
-        model.fit(
-            training,
-            validation_data=validation,
-            epochs=10,
-            validation_steps=10,
-            verbose=2,
-            callbacks=[checkpoint]
-        )
-
-    model.summary()
+    model.fit(
+        training,
+        validation_data=validation,
+        epochs=10,
+        validation_steps=10,
+        verbose=2,
+        callbacks=[checkpoint]
+    )
 
     return model
