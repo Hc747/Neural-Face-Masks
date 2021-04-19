@@ -8,7 +8,7 @@ BOUNDARY_NETWORK_NAME: str = 'boundary'
 CLASSIFICATION_NETWORK_NAME: str = 'classification'
 
 LOSS_FUNCTIONS = {
-    BOUNDARY_NETWORK_NAME: 'mean_squared_error',
+    BOUNDARY_NETWORK_NAME: 'mean_squared_error', # TODO: L2
     CLASSIFICATION_NETWORK_NAME: 'categorical_crossentropy'
 }
 
@@ -44,6 +44,7 @@ class ClassifyingDetectionNetwork(NetworkArchitecture):
         self.classes = classes
 
     def model(self):
+        # TODO: change input size to be native resolution
         base = self.base(weights='imagenet', include_top=False, input_shape=(IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS))
         base.trainable = False
 
