@@ -13,6 +13,7 @@ DEFAULT_FRAME_SIZE: int = 360
 DEFAULT_FACE_SIZE: int = 224
 DEFAULT_DEBUG: bool = True
 DEFAULT_DISABLE_ASSERTIONS: bool = True
+DEFAULT_EXPERIMENTAL_FEATURES: bool = False
 
 
 def __boolean(v: str) -> bool:
@@ -32,17 +33,23 @@ __parser.add_argument('--title', default=DEFAULT_TITLE, help='Application GUI ti
 __parser.add_argument('--width', default=DEFAULT_WIDTH, help='Camera resolution (width)')
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, help='Camera resolution (height)')
 __parser.add_argument('--frame_size', default=DEFAULT_FRAME_SIZE, help='Frame callback resolution (width and height)')
+__parser.add_argument('--experimental', default=DEFAULT_EXPERIMENTAL_FEATURES, type=__boolean, help='Enable experimental features')
 
 # publicly exported
 args = __parser.parse_args()
 
 
 __debug: bool = args.debug
+__experimental: bool = args.experimental
 __disable_assertions: bool = args.disable_assertions
 
 
 def is_debug() -> bool:
     return __debug
+
+
+def is_experimental() -> bool:
+    return __experimental
 
 
 # export debug statement or no-op
