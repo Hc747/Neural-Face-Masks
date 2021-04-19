@@ -111,7 +111,7 @@ def build(path: str, size: int, channels: int, training, validation=None):
         validation_data=validation,
         epochs=10,
         validation_steps=10,
-        verbose=2,
+        verbose=1,
         callbacks=[checkpoint]
     )
 
