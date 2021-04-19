@@ -87,7 +87,10 @@ def testing_generator(directory: str, size: int, channels: int):
 
 
 def build(path: str, size: int, channels: int, training, validation=None):
-    model = tf.keras.models.load_model(path)
+    try:
+        model = tf.keras.models.load_model(path)
+    except IOError as ignored:
+        model = None
 
     if model is not None:
         return prepare(model)
