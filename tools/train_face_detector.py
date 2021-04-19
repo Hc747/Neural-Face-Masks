@@ -47,27 +47,24 @@ for index, file in enumerate(os.listdir(annotation_directory)):
 
     image = img_to_array(load_img(path, target_size=(IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS))) / 255.0
 
-    scaled_width: int = int(IMAGE_SIZE / width)
-    scaled_height: int = int(IMAGE_SIZE / height)
+    scaled_width: float = float(IMAGE_SIZE / width)
+    scaled_height: float = float(IMAGE_SIZE / height)
 
     for boundary in annotation.iter('object'):
         label: str = boundary.find('name').text
-        # calculate ratios (new-x / original-x), (new-y / original-y)
-        # multiply by ratios
-        # divide by new x/y (to normalise)
 
-        # xmin = float(boundary.find('bndbox/xmin').text) / width
-        # ymin = float(boundary.find('bndbox/ymin').text) / height
-        # xmax = float(boundary.find('bndbox/xmax').text) / width
-        # ymax = float(boundary.find('bndbox/ymax').text) / height
+        xmin = float(boundary.find('bndbox/xmin').text)
+        ymin = float(boundary.find('bndbox/ymin').text)
+        xmax = float(boundary.find('bndbox/xmax').text)
+        ymax = float(boundary.find('bndbox/ymax').text)
 
-        xmin = (float(boundary.find('bndbox/xmin').text) * scaled_width) / IMAGE_SIZE
-        ymin = (float(boundary.find('bndbox/ymin').text) * scaled_height) / IMAGE_SIZE
-        xmax = (float(boundary.find('bndbox/xmax').text) * scaled_height) / IMAGE_SIZE
-        ymax = (float(boundary.find('bndbox/ymax').text) * scaled_width) / IMAGE_SIZE
+        # (point * (new / original)) / new in order to normalise
+        scaled_xmin = (xmin * scaled_width) / IMAGE_SIZE
+        scaled_ymin = (ymin * scaled_height) / IMAGE_SIZE
+        scaled_xmax = (xmax * scaled_width) / IMAGE_SIZE
+        scaled_ymax = (ymax * scaled_height) / IMAGE_SIZE
 
-        # coordinates = np.array([xmin, ymin, xmax, ymax])
-        coordinates = (xmin, ymin, xmax, ymax)
+        coordinates = (scaled_xmin, scaled_ymin, scaled_xmax, scaled_ymax)
 
         images.append(image)
         labels.append(label)
