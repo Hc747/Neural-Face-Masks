@@ -58,7 +58,9 @@ for index, file in enumerate(os.listdir(annotation_directory)):
         xmax = float(boundary.find('bndbox/xmax').text)
         ymax = float(boundary.find('bndbox/ymax').text)
 
-        # (point * (new / original)) / new in order to normalise
+        # scaling, normalisation, sigmoid & image duplication
+
+        # point = (original * scale) / new
         scaled_xmin = (xmin * scaled_width) / IMAGE_SIZE
         scaled_ymin = (ymin * scaled_height) / IMAGE_SIZE
         scaled_xmax = (xmax * scaled_width) / IMAGE_SIZE

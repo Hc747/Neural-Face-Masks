@@ -1,7 +1,7 @@
 import abc
 import cv2
 from threading import Thread
-from typing import Optional
+from typing import Optional, Tuple
 from PIL import Image
 from config import debug
 from timing.time_source import TimeSource
@@ -9,7 +9,7 @@ from ui.callback.callback import FrameCallback
 from ui.state import State
 
 
-ImageFrame = tuple[Optional[Image.Image], int]
+ImageFrame = Tuple[Optional[Image.Image], int]
 EMPTY: ImageFrame = (None, 0)
 
 

@@ -22,7 +22,6 @@ class GUI:
     __source = Optional[ImageSource]
     __delay_ms: int = 10
     __last: int = -1
-    __frames: deque[float]
 
     def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0, history: int = 5):
         self.__title = title
