@@ -1,6 +1,5 @@
 import cv2
 from typing import Optional
-from collections import deque
 from tkinter import *
 from PIL import Image, ImageTk
 from detectors.face.detectors import FaceDetectorProvider
@@ -23,13 +22,12 @@ class GUI:
     __delay_ms: int = 10
     __last: int = -1
 
-    def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0, history: int = 5):
+    def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0):
         self.__title = title
         self.__width = width
         self.__height = height
         self.__callback = callback if callback is not None else FrameCallback(lambda frame: Image.fromarray(frame))
         self.__port = port
-        self.__frames = deque([0.0] * history)
 
     @property
     def time(self):
@@ -62,11 +60,11 @@ class GUI:
         self.__destroy()
         self.__state = State.UNINITIALISED
 
-    def __update_image(self, canvas):
+    def __update_image(self, canvas) -> bool:
         image, timestamp = self.__source.image
 
         if image is None or self.__last >= timestamp:
-            return
+            return False
 
         self.__last = timestamp
 
@@ -74,26 +72,14 @@ class GUI:
 
         canvas.configure(image=photo)
         canvas.__cached = photo  # avoid garbage collection
+        return True
 
-    def __update_render_cycles(self, canvas):
-        fps = self.__calculate_render_cycles()
-        canvas.configure(text=f'Render cycles per second: {fps}')
-
-    def __calculate_render_cycles(self) -> int:
-        frames = self.__frames
-        frames.rotate()
-        frames[0] = self.__time.seconds
-
-        sum_of_deltas = frames[0] - frames[-1]
-        count_of_deltas = len(frames) - 1
-        return 0 if sum_of_deltas == 0 else int(float(count_of_deltas) / sum_of_deltas)
-
-    def __update_all(self, image, cycles):
+    def __update_all(self, image):
         root = self.__root
-        self.__update_image(image)
-        self.__update_render_cycles(cycles)
-        root.update()
-        root.after(self.__delay_ms, func=lambda: self.__update_all(image, cycles))
+        updated = self.__update_image(image)
+        if updated:
+            root.update()
+        root.after(self.__delay_ms, func=lambda: self.__update_all(image))
 
     def __setup_image_source(self):
         self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, self.__delay_ms)
@@ -122,10 +108,6 @@ class GUI:
         image_canvas = Label(master=image_container)
         image_canvas.pack()
 
-        # render cycle label
-        render_cycle_canvas = Label(master=info_container)
-        render_cycle_canvas.pack()
-
         # camera resolution
         resolution_canvas = Label(master=info_container, text=f'Native resolution: {self.width}x{self.height}px')
         resolution_canvas.pack()
@@ -147,7 +129,7 @@ class GUI:
         exit_button.pack(side=RIGHT)
 
         # setup the update callback
-        root.after(0, func=lambda: self.__update_all(image_canvas, render_cycle_canvas))
+        root.after(0, func=lambda: self.__update_all(image_canvas))
 
     def __setup(self):
         self.__setup_image_source()
