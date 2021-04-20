@@ -2,7 +2,7 @@ import dlib
 from imutils import face_utils
 
 
-DEFAULT_UPSCALE: int = 1
+DEFAULT_UPSCALE: int = 0
 
 
 class FaceDetector:
