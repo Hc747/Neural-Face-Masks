@@ -2,7 +2,6 @@ import abc
 from tensorflow.keras import Model
 from tensorflow.keras.applications import *
 from tensorflow.keras.layers import *
-from constants import IMAGE_SIZE, IMAGE_CHANNELS
 
 BOUNDARY_NETWORK_NAME: str = 'boundary'
 CLASSIFICATION_NETWORK_NAME: str = 'classification'
@@ -38,14 +37,33 @@ class NetworkArchitecture(metaclass=abc.ABCMeta):
         return model
 
 
-class ClassifyingDetectionNetwork(NetworkArchitecture):
-    def __init__(self, base, classes: int):
+class ClassificationNetwork(NetworkArchitecture):
+    def __init__(self, base, shape, classes):
         self.base = base
-        self.classes = classes
+        self.__shape = shape
+        self.__classes = classes
 
     def model(self):
-        # TODO: change input size to be native resolution
-        base = self.base(weights='imagenet', include_top=False, input_shape=(IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS))
+        base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)
+        base.trainable = False
+
+        head = Flatten()(base.output)
+        classification = Dense(512, activation='relu')(head)
+        classification = Dropout(0.5)(classification)
+        classification = Dense(512, activation='relu')(classification)
+        classification = Dropout(0.5)(classification)
+        classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
+        return Model(inputs=base.input, outputs=classification)
+
+
+class ClassificationRegressionNetwork(NetworkArchitecture):
+    def __init__(self, base, shape, classes):
+        self.base = base
+        self.__shape = shape
+        self.__classes = classes
+
+    def model(self):
+        base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)
         base.trainable = False
 
         head = Flatten()(base.output)
@@ -63,5 +81,5 @@ class ClassifyingDetectionNetwork(NetworkArchitecture):
         classification = Dropout(0.5)(classification)
         classification = Dense(512, activation='relu')(classification)
         classification = Dropout(0.5)(classification)
-        classification = Dense(self.classes, activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
+        classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
         return Model(inputs=base.input, outputs=(boundary, classification))
