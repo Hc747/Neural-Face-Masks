@@ -12,7 +12,6 @@ from ui.state import State
 
 class GUI:
     # TODO: resizing
-    # TODO: hooking for drawing / classification / segmentation / etc
 
     __time = TimeSource()
     __state: State = State.UNINITIALISED
