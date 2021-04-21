@@ -10,7 +10,7 @@ ROOT_OUTPUT_LOCATION: str = os.path.join(__root, 'models', 'mask')
 
 DEFAULT_EPOCHS: int = 15
 DEFAULT_NETWORK: str = 'vgg16'
-DEFAULT_DATASET: str = 'andrew'
+DEFAULT_DATASET: str = MASK_DETECTOR_ANDREW
 DEFAULT_DUPLICATE: bool = False
 DEFAULT_REGRESSION: bool = False
 

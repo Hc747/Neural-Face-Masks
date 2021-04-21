@@ -15,6 +15,8 @@ from ui.processing.image import crop_square
 # TODO: JIT compilation?
 # TODO: add more classes
 # TODO: relocate..?
+from ui.rendering.rendering import draw_stats, draw_boxes
+
 PREDICTION_MASKED: int = 0
 PREDICTION_UNMASKED: int = 1
 
@@ -211,21 +213,6 @@ def draw_hit(frame, index, prediction, face, boundary):
     return masked, unmasked
 
 
-def draw_boxes(frame, face_coordinates, face_colour, face_label, boundary_coordinates, boundary_colour, boundary_label):
-    # face
-    cv2.rectangle(frame, face_coordinates[:2], face_coordinates[2:], face_colour, 1)
-    cv2.putText(frame, text=face_label, org=(face_coordinates[0], face_coordinates[1] - TEXT_OFFSET), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=face_colour)
-    # boundary
-    cv2.rectangle(frame, boundary_coordinates[:2], boundary_coordinates[2:], boundary_colour, 1)
-    offset = int(-TEXT_OFFSET * 1.5) if np.allclose(face_coordinates[:2], boundary_coordinates[:2], atol=TEXT_OFFSET // 2) else TEXT_OFFSET
-    cv2.putText(frame, text=boundary_label, org=(boundary_coordinates[0], boundary_coordinates[1] - offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=boundary_colour)
-
-
-def draw_stats(frame, masked: int, unmasked: int):
-    cv2.putText(frame, f'Masked: {masked}', org=(0, 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_GREEN)
-    cv2.putText(frame, f'Unmasked: {unmasked}', org=(0, 25), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_RED)
-
-
 def get_face_detector(config) -> FaceDetector:
     if config.face_detector == FACE_DETECTOR_SVM:
         return FaceDetectorProvider.svm()
@@ -235,6 +222,7 @@ def get_face_detector(config) -> FaceDetector:
         raise ValueError(f'Unknown face detector implementation: {config.face_detector}. Must be one of: {ALL_FACE_DETECTORS}')
 
 
+# TODO: specific return type (mask detector..)
 def get_mask_detector(config):
     if config.mask_detector == MASK_DETECTOR_ANDREW:
         return MaskDetectorProvider.andrew()

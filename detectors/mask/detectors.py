@@ -9,6 +9,7 @@ base: str = os.path.join(__root, 'models', 'mask')
 
 
 # TODO: evaluation functions for translating prediction results...
+# TODO: ensemble learning / model..?
 class MaskDetectorProvider:
     @staticmethod
     def version() -> str:
