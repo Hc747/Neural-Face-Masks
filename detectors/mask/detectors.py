@@ -4,7 +4,8 @@ from keras import Model
 from tensorflow import keras
 from network.network_architecture import NetworkArchitecture, LOSS_WEIGHTS, LOSS_FUNCTIONS
 
-root: str = os.path.abspath(os.path.join('..', '..', 'models', 'mask'))
+__root: str = os.path.abspath('.')
+base: str = os.path.join(__root, 'models', 'mask')
 
 
 # TODO: evaluation functions for translating prediction results...
@@ -15,12 +16,12 @@ class MaskDetectorProvider:
 
     @staticmethod
     def andrew() -> Model:
-        directory = os.path.join(root, 'andrew', 'classification', 'checkpoint')
+        directory = os.path.join(base, 'andrew', 'classification', 'checkpoint')
         return MaskDetectorProvider.__load(directory)
 
     @staticmethod
     def ashish() -> Model:
-        directory = os.path.join(root, 'ashish', 'classification', 'checkpoint')
+        directory = os.path.join(base, 'ashish', 'classification', 'checkpoint')
         return MaskDetectorProvider.__load(directory)
 
     @staticmethod
