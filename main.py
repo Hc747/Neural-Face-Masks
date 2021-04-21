@@ -144,7 +144,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         )
 
         f = (face_left, face_top, face_right, face_bottom)
-        b = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)  # TODO: subtract 1 from right and bottom
+        b = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)
         i = dlib.sub_image(img=frame, rect=dlib.rectangle(*b))
 
         (width, height) = np.shape(i)[:2]
@@ -168,13 +168,13 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         debug(lambda: '---mask---')
 
     if len(images) <= 0:
-        # short circuit
+        debug(lambda: f'No faces detected - short circuiting')
         return Image.fromarray(frame)
 
     images = np.asarray(images)
     predictions = mask.predict(images)
 
-    print(f'Predictions: {predictions}')
+    debug(lambda: f'Predictions: {predictions}')
 
     masked, unmasked = 0, 0
     for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
@@ -183,6 +183,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         unmasked += u
 
     draw_stats(frame, masked, unmasked)
+    debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}')
 
     return Image.fromarray(frame)
 
