@@ -190,7 +190,11 @@ def draw_hit(frame, index, prediction, face, boundary):
 
 def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
     frame_size = config.frame_size
-    return FrameCallback(lambda frame: process_frame(frame, face, mask, match_size=IMAGE_SIZE, resize_to=frame_size))
+
+    def fn(frame):
+        return process_frame(frame, face, mask, match_size=IMAGE_SIZE, resize_to=frame_size)
+
+    return FrameCallback(fn)
 
 
 if __name__ == '__main__':
