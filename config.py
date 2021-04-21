@@ -42,7 +42,7 @@ args = __parser.parse_args()
 
 __debug: bool = args.debug
 __experimental: bool = args.experimental
-__enable_assertions: bool = args.enable_assertions
+__assertions_enabled: bool = args.enable_assertions
 
 
 def is_debug() -> bool:
@@ -51,6 +51,10 @@ def is_debug() -> bool:
 
 def is_experimental() -> bool:
     return __experimental
+
+
+def is_assertions_enabled() -> bool:
+    return __assertions_enabled
 
 
 # export debug statement or no-op
@@ -62,7 +66,7 @@ else:
         pass
 
 # export expect statement or no-op
-if __enable_assertions:
+if __assertions_enabled:
     def expect(condition, message):
         assert condition(), message()
 else:

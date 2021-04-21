@@ -3,7 +3,7 @@ import dlib
 import numpy as np
 from PIL import Image
 from typing import Optional
-from config import args, debug, expect
+from config import args, debug, expect, is_debug, is_assertions_enabled
 from constants import *
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from detectors.mask.detectors import MaskDetectorProvider
@@ -67,16 +67,6 @@ def pad(value: int, size: int = 3) -> str:
 
 
 def delta(v: int) -> int:
-    """
-    :param v: the value to calculate the delta (padding on each side) of
-    :return:
-    if v < 0:
-        TODO: documentation
-    if v > 0:
-        TODO: documentation
-    if v == 0:
-        TODO: documentation
-    """
     return -v // 2 if v < 0 else v // 2 if v > 0 else 0
 
 
@@ -101,27 +91,8 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         (face_left, face_top, face_width, face_height) = face.bounding_box(detection)
         face_right, face_bottom = face_left + face_width, face_top + face_height
 
-        expect(
-            lambda: 0 < match_size < frame_width,
-            lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_width}'
-        )
-
-        expect(
-            lambda: 0 < match_size < frame_height,
-            lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_height}'
-        )
-
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
-        expect(
-            lambda: 0 <= face_left <= face_right <= frame_width,
-            lambda: f'(0 <= left <= right <= frame) = 0 <= {face_left} <= {face_right} <= {frame_width}'
-        )
-
         face_top, face_bottom = bind(face_top, face_bottom, 0, frame_height)
-        expect(
-            lambda: 0 <= face_top <= face_bottom <= frame_height,
-            lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_height}'
-        )
 
         # TODO: account for if face is too close (too large)...
         dx: int = delta(match_size - face_width)
@@ -134,16 +105,15 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         offset_y = (match_size - (crop_bottom - crop_top))
 
         crop_left, crop_right = bind(crop_left - offset_x, crop_right, 0, frame_width)
-        expect(
-            lambda: (crop_right - crop_left) == match_size,
-            lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {match_size}) = {crop_right - crop_left} == {match_size}'
-        )
-
         crop_top, crop_bottom = bind(crop_top - offset_y, crop_bottom, 0, frame_height)
-        expect(
-            lambda: (crop_bottom - crop_top) == match_size,
-            lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}'
-        )
+
+        if is_assertions_enabled():
+            expect(lambda: 0 < match_size < frame_width, lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_width}')
+            expect(lambda: 0 < match_size < frame_height, lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_height}')
+            expect(lambda: 0 <= face_left <= face_right <= frame_width, lambda: f'(0 <= left <= right <= frame) = 0 <= {face_left} <= {face_right} <= {frame_width}')
+            expect(lambda: 0 <= face_top <= face_bottom <= frame_height, lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_height}')
+            expect(lambda: (crop_right - crop_left) == match_size, lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {match_size}) = {crop_right - crop_left} == {match_size}')
+            expect(lambda: (crop_bottom - crop_top) == match_size, lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}')
 
         f = (face_left, face_top, face_right, face_bottom)
         b = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)
@@ -158,25 +128,28 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         else:
             draw_boxes(frame, f, COLOUR_WHITE, '', b, COLOUR_WHITE, f'Unprocessable ({width}x{height})')
 
-        debug(lambda: f'face_image_boundary: (l,t,r,b){f}, face_image_shape: {np.shape(i)}')
-        debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
-        debug(lambda: '---face---')
-        debug(lambda: f'[L {pad(face_left)}, R {pad(face_right)}, W {pad(face_width)}]')
-        debug(lambda: f'[T {pad(face_top)}, B {pad(face_bottom)}, H {pad(face_height)}]')
-        debug(lambda: '---face---')
-        debug(lambda: '---mask---')
-        debug(lambda: f'[L {pad(crop_left)}, R {pad(crop_right)}]')
-        debug(lambda: f'[T {pad(crop_top)}, B {pad(crop_bottom)}]')
-        debug(lambda: '---mask---')
+        if is_debug():
+            debug(lambda: f'face_image_boundary: (l,t,r,b){f}, face_image_shape: {np.shape(i)}')
+            debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
+            debug(lambda: '---face---')
+            debug(lambda: f'[L {pad(face_left)}, R {pad(face_right)}, W {pad(face_width)}]')
+            debug(lambda: f'[T {pad(face_top)}, B {pad(face_bottom)}, H {pad(face_height)}]')
+            debug(lambda: '---face---')
+            debug(lambda: '---mask---')
+            debug(lambda: f'[L {pad(crop_left)}, R {pad(crop_right)}]')
+            debug(lambda: f'[T {pad(crop_top)}, B {pad(crop_bottom)}]')
+            debug(lambda: '---mask---')
 
     if len(images) <= 0:
-        debug(lambda: f'No faces detected - short circuiting')
+        if is_debug():
+            debug(lambda: f'No faces detected - short circuiting')
         return Image.fromarray(frame)
 
     images = np.asarray(images)
     predictions = mask.predict(images)
 
-    debug(lambda: f'Predictions: {predictions}')
+    if is_debug():
+        debug(lambda: f'Predictions: {predictions}')
 
     masked, unmasked = 0, 0
     for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
@@ -185,7 +158,8 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         unmasked += u
 
     draw_stats(frame, masked, unmasked)
-    debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}')
+    if is_debug():
+        debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}')
 
     return Image.fromarray(frame)
 
