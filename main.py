@@ -20,12 +20,8 @@ from ui.processing.image import crop_square
 # TODO: JIT compilation?
 # TODO: add more classes
 # TODO: relocate..?
-if is_experimental():
-    PREDICTION_MASKED: int = 1
-    PREDICTION_UNMASKED: int = 2
-else:
-    PREDICTION_MASKED: int = 0
-    PREDICTION_UNMASKED: int = 1
+PREDICTION_MASKED: int = 0
+PREDICTION_UNMASKED: int = 1
 
 
 def evaluate_prediction(probabilities: [float]) -> Tuple[int, float]:
@@ -105,10 +101,6 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
 
     detections = face.detect(frame)  # TODO: train for faces with and without masks
     for detection in detections:
-        # TODO: ensure crop dimensions are equal to face_size
-        # TODO: ensure coordinates do not fall below 0 or above frame_size, and if so, slide across.
-        # TODO: account for if face is too close (too large)...
-
         (face_left, face_top, face_width, face_height) = face.bounding_box(detection)
         face_right, face_bottom = face_left + face_width, face_top + face_height
 
@@ -134,6 +126,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_height}'
         )
 
+        # TODO: account for if face is too close (too large)...
         dx: int = delta(match_size - face_width)
         dy: int = delta(match_size - face_height)
 
@@ -166,7 +159,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             coordinates.append(f)
             boundaries.append(b)
         else:
-            draw_info(frame, f, COLOUR_WHITE, '', b, COLOUR_WHITE, f'Unprocessable ({width}x{height})')
+            draw_boxes(frame, f, COLOUR_WHITE, '', b, COLOUR_WHITE, f'Unprocessable ({width}x{height})')
 
         debug(lambda: f'face_image_boundary: (l,t,r,b){f}, face_image_shape: {np.shape(i)}')
         debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
@@ -188,21 +181,29 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
 
     print(f'Predictions: {predictions}')
 
+    masked, unmasked = 0, 0
     for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
-        draw_hit(frame, index, p, f, b)
+        m, u = draw_hit(frame, index, p, f, b)
+        masked += m
+        unmasked += u
+
+    draw_stats(frame, masked, unmasked)
 
     return Image.fromarray(frame)
 
 
 def draw_hit(frame, index, prediction, face, boundary):
     prediction, confidence = evaluate_prediction(prediction)
+    masked, unmasked = 0, 0
 
     if prediction == PREDICTION_MASKED:
         face_colour = COLOUR_GREEN
         category = 'Masked'
+        masked = 1
     elif prediction == PREDICTION_UNMASKED:
         face_colour = COLOUR_RED
         category = 'Unmasked'
+        unmasked = 1
     else:
         face_colour = COLOUR_WHITE
         category = 'Undetermined'
@@ -210,10 +211,11 @@ def draw_hit(frame, index, prediction, face, boundary):
     face_label = f'{index + 1}: {category} - {confidence * 100.0:.02f}%'
     boundary_label = f'{index + 1}: Boundary'
 
-    draw_info(frame, face, face_colour, face_label, boundary, COLOUR_BLUE, boundary_label)
+    draw_boxes(frame, face, face_colour, face_label, boundary, COLOUR_BLUE, boundary_label)
+    return masked, unmasked
 
 
-def draw_info(frame, face_coordinates, face_colour, face_label, boundary_coordinates, boundary_colour, boundary_label):
+def draw_boxes(frame, face_coordinates, face_colour, face_label, boundary_coordinates, boundary_colour, boundary_label):
     # face
     cv2.rectangle(frame, face_coordinates[:2], face_coordinates[2:], face_colour, 1)
     cv2.putText(frame, text=face_label, org=(face_coordinates[0], face_coordinates[1] - TEXT_OFFSET), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=face_colour)
@@ -221,6 +223,11 @@ def draw_info(frame, face_coordinates, face_colour, face_label, boundary_coordin
     cv2.rectangle(frame, boundary_coordinates[:2], boundary_coordinates[2:], boundary_colour, 1)
     offset = int(-TEXT_OFFSET * 1.5) if np.allclose(face_coordinates[:2], boundary_coordinates[:2], atol=TEXT_OFFSET // 2) else TEXT_OFFSET
     cv2.putText(frame, text=boundary_label, org=(boundary_coordinates[0], boundary_coordinates[1] - offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=boundary_colour)
+
+
+def draw_stats(frame, masked: int, unmasked: int):
+    cv2.putText(frame, f'Masked: {masked}', org=(0, 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_GREEN)
+    cv2.putText(frame, f'Unmasked: {unmasked}', org=(0, 25), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_RED)
 
 
 def get_face_detector(config) -> FaceDetector:
@@ -231,7 +238,7 @@ def get_face_detector(config) -> FaceDetector:
 
 def get_mask_detector(config):
     if is_experimental():
-        directory: str = os.path.join('.', 'models', 'mask', 'classification', 'checkpoint')
+        directory: str = os.path.join('.', 'models', 'mask', 'ashish', 'classification', 'checkpoint')
         model = tf.keras.models.load_model(directory)
 
         if model is None:
