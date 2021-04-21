@@ -226,9 +226,12 @@ def draw_stats(frame, masked: int, unmasked: int):
 
 
 def get_face_detector(config) -> FaceDetector:
-    if config.face_detector == 'accurate':
-        return FaceDetectorProvider.complex(config.face_detector_path)
-    return FaceDetectorProvider.simple()
+    if config.face_detector == FACE_DETECTOR_SVM:
+        return FaceDetectorProvider.svm()
+    elif config.face_detector == FACE_DETECTOR_CNN:
+        return FaceDetectorProvider.cnn(config.face_detector_path)
+    else:
+        raise ValueError(f'Unknown face detector implementation: {config.face_detector}')
 
 
 def get_mask_detector(config):

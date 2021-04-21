@@ -1,12 +1,12 @@
 import argparse
 import os
 from distutils.util import strtobool
-from constants import MASK_DETECTOR_ASHISH
+from constants import MASK_DETECTOR_ASHISH, FACE_DETECTOR_SVM
 
 DEFAULT_TITLE: str = 'FTF: Face Mask Analyser'
 DEFAULT_IMAGE_SOURCE: str = 'video'
-DEFAULT_DETECTOR: str = 'realtime'
 DEFAULT_FACE_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'models', 'face', 'mmod_human_face_detector.dat'))
+DEFAULT_DETECTOR: str = FACE_DETECTOR_SVM
 DEFAULT_MASK_DETECTOR: str = MASK_DETECTOR_ASHISH
 DEFAULT_WIDTH: int = 1024
 DEFAULT_HEIGHT: int = 720
