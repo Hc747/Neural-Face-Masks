@@ -232,7 +232,7 @@ def get_face_detector(config) -> FaceDetector:
     elif config.face_detector == FACE_DETECTOR_CNN:
         return FaceDetectorProvider.cnn(config.face_detector_path)
     else:
-        raise ValueError(f'Unknown face detector implementation: {config.face_detector}')
+        raise ValueError(f'Unknown face detector implementation: {config.face_detector}. Must be one of: {ALL_FACE_DETECTORS}')
 
 
 def get_mask_detector(config):
@@ -241,7 +241,7 @@ def get_mask_detector(config):
     elif config.mask_detector == MASK_DETECTOR_ASHISH:
         return MaskDetectorProvider.ashish()
     else:
-        raise ValueError(f'Unknown mask detector implementation: {config.mask_detector}')
+        raise ValueError(f'Unknown mask detector implementation: {config.mask_detector}. Must be one of: {ALL_MASK_DETECTORS}')
 
 
 def get_callback(config, face: FaceDetector, mask) -> FrameCallback:

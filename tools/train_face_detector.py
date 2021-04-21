@@ -1,8 +1,7 @@
 import argparse
 import os
 import tensorflow as tf
-from constants import IMAGE_SIZE, IMAGE_CHANNELS, MASK_DETECTOR_ASHISH, MASK_DETECTOR_ANDREW
-
+from constants import IMAGE_SIZE, IMAGE_CHANNELS, MASK_DETECTOR_ASHISH, MASK_DETECTOR_ANDREW, ALL_MASK_DETECTORS
 
 __root = os.path.abspath('..')
 ROOT_INPUT_LOCATION: str = os.path.join(__root, 'data')
@@ -36,7 +35,7 @@ if dataset == MASK_DETECTOR_ANDREW:
 elif dataset == MASK_DETECTOR_ASHISH:
     from tools.dataset.ashish import generate
 else:
-    raise ValueError(f'Unknown dataset: {dataset}')
+    raise ValueError(f'Unknown dataset: {dataset}. Must be one of: {ALL_MASK_DETECTORS}')
 
 (x, y, validation), (architecture, model, classes, output) = generate(
     SHAPE,
