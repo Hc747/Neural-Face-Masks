@@ -12,8 +12,8 @@ DEFAULT_WIDTH: int = 1024
 DEFAULT_HEIGHT: int = 720
 DEFAULT_FRAME_SIZE: int = 360
 DEFAULT_FACE_SIZE: int = 224
-DEFAULT_DEBUG: bool = True
-DEFAULT_DISABLE_ASSERTIONS: bool = True
+DEFAULT_ENABLE_DEBUG: bool = True
+DEFAULT_ENABLE_ASSERTIONS: bool = False
 DEFAULT_EXPERIMENTAL_FEATURES: bool = False
 
 
@@ -28,8 +28,8 @@ __parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, help='Image sour
 __parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, help='Face detector (realtime or accurate)')
 __parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, help='Face detector models path')
 __parser.add_argument('--mask_detector', default=DEFAULT_MASK_DETECTOR, help='Mask detector implementation')
-__parser.add_argument('--debug', type=__boolean, default=DEFAULT_DEBUG, help='Print debug statements (True/False)')
-__parser.add_argument('--disable_assertions', type=__boolean, default=DEFAULT_DISABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
+__parser.add_argument('--debug', type=__boolean, default=DEFAULT_ENABLE_DEBUG, help='Print debug statements (True/False)')
+__parser.add_argument('--enable_assertions', type=__boolean, default=DEFAULT_ENABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
 __parser.add_argument('--title', default=DEFAULT_TITLE, help='Application GUI title')
 __parser.add_argument('--width', default=DEFAULT_WIDTH, help='Camera resolution (width)')
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, help='Camera resolution (height)')
@@ -42,7 +42,7 @@ args = __parser.parse_args()
 
 __debug: bool = args.debug
 __experimental: bool = args.experimental
-__disable_assertions: bool = args.disable_assertions
+__enable_assertions: bool = args.enable_assertions
 
 
 def is_debug() -> bool:
@@ -62,9 +62,9 @@ else:
         pass
 
 # export expect statement or no-op
-if __disable_assertions:
-    def expect(condition, message):
-        pass
-else:
+if __enable_assertions:
     def expect(condition, message):
         assert condition(), message()
+else:
+    def expect(condition, message):
+        pass
