@@ -1,7 +1,8 @@
 import argparse
 import os
 import tensorflow as tf
-from constants import IMAGE_SIZE, IMAGE_CHANNELS
+from constants import IMAGE_SIZE, IMAGE_CHANNELS, MASK_DETECTOR_ASHISH, MASK_DETECTOR_ANDREW
+
 
 __root = os.path.abspath('..')
 ROOT_INPUT_LOCATION: str = os.path.join(__root, 'data')
@@ -30,24 +31,19 @@ dataset = args.dataset
 SHAPE = (IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS)
 output_directory_base = os.path.join(ROOT_OUTPUT_LOCATION, dataset)
 
-if dataset == 'andrew':
+if dataset == MASK_DETECTOR_ANDREW:
     from tools.dataset.andrew import generate
-    (x, y, validation), (architecture, model, classes, output), extra = generate(
-        SHAPE,
-        ROOT_INPUT_LOCATION,
-        output_directory_base,
-        args
-    )
-elif dataset == 'ashish':
+elif dataset == MASK_DETECTOR_ASHISH:
     from tools.dataset.ashish import generate
-    (x, y, validation), (architecture, model, classes, output) = generate(
-        SHAPE,
-        ROOT_INPUT_LOCATION,
-        output_directory_base,
-        args
-    )
 else:
     raise ValueError(f'Unknown dataset: {dataset}')
+
+(x, y, validation), (architecture, model, classes, output) = generate(
+    SHAPE,
+    ROOT_INPUT_LOCATION,
+    output_directory_base,
+    args
+)
 
 model.summary()
 
