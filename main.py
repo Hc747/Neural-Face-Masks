@@ -122,9 +122,9 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         (width, height) = np.shape(i)[:2]
 
         if width == height == match_size:
-            images.append(i)
             coordinates.append(f)
             boundaries.append(b)
+            images.append(i)
         else:
             draw_boxes(frame, f, COLOUR_WHITE, '', b, COLOUR_WHITE, f'Unprocessable ({width}x{height})')
 
@@ -158,6 +158,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         unmasked += u
 
     draw_stats(frame, masked, unmasked)
+
     if is_debug():
         debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}')
 
