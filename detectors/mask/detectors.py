@@ -2,6 +2,7 @@ import os.path
 import tensorflow as tf
 from keras import Model
 from tensorflow import keras
+from constants import MASK_DETECTOR_ANDREW, MASK_DETECTOR_ASHISH, ALL_MASK_DETECTORS
 from network.network_architecture import NetworkArchitecture, LOSS_WEIGHTS, LOSS_FUNCTIONS
 
 __root: str = os.path.abspath('.')
@@ -31,3 +32,13 @@ class MaskDetectorProvider:
         if model is None:
             raise ValueError(f'Pre-trained model not found: {directory}')
         return NetworkArchitecture.compile_static(model, loss=LOSS_FUNCTIONS, weights=LOSS_WEIGHTS)
+
+    # TODO: specific return type (mask detector..)
+    @staticmethod
+    def get_mask_detector(config):
+        if config.mask_detector == MASK_DETECTOR_ANDREW:
+            return MaskDetectorProvider.andrew()
+        elif config.mask_detector == MASK_DETECTOR_ASHISH:
+            return MaskDetectorProvider.ashish()
+        else:
+            raise ValueError(f'Unknown mask detector implementation: {config.mask_detector}. Must be one of: {ALL_MASK_DETECTORS}')

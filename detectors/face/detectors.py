@@ -1,6 +1,6 @@
 import dlib
 from imutils import face_utils
-
+from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, ALL_FACE_DETECTORS
 
 DEFAULT_UPSCALE: int = 0
 
@@ -33,3 +33,12 @@ class FaceDetectorProvider:
     @staticmethod
     def cnn(filename: str) -> FaceDetector:
         return FaceDetector(dlib.cnn_face_detection_model_v1(filename=filename), lambda detection: detection.rect)
+
+    @staticmethod
+    def get_face_detector(config) -> FaceDetector:
+        if config.face_detector == FACE_DETECTOR_SVM:
+            return FaceDetectorProvider.svm()
+        elif config.face_detector == FACE_DETECTOR_CNN:
+            return FaceDetectorProvider.cnn(config.face_detector_path)
+        else:
+            raise ValueError(f'Unknown face detector implementation: {config.face_detector}. Must be one of: {ALL_FACE_DETECTORS}')

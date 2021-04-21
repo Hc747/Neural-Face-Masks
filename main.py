@@ -10,12 +10,12 @@ from detectors.mask.detectors import MaskDetectorProvider
 from ui.callback.callback import FrameCallback
 from ui.gui import GUI
 from ui.processing.image import crop_square
+from ui.rendering.rendering import draw_stats, draw_boxes
 
 # TODO: logging
 # TODO: JIT compilation?
 # TODO: add more classes
 # TODO: relocate..?
-from ui.rendering.rendering import draw_stats, draw_boxes
 
 PREDICTION_MASKED: int = 0
 PREDICTION_UNMASKED: int = 1
@@ -213,25 +213,6 @@ def draw_hit(frame, index, prediction, face, boundary):
     return masked, unmasked
 
 
-def get_face_detector(config) -> FaceDetector:
-    if config.face_detector == FACE_DETECTOR_SVM:
-        return FaceDetectorProvider.svm()
-    elif config.face_detector == FACE_DETECTOR_CNN:
-        return FaceDetectorProvider.cnn(config.face_detector_path)
-    else:
-        raise ValueError(f'Unknown face detector implementation: {config.face_detector}. Must be one of: {ALL_FACE_DETECTORS}')
-
-
-# TODO: specific return type (mask detector..)
-def get_mask_detector(config):
-    if config.mask_detector == MASK_DETECTOR_ANDREW:
-        return MaskDetectorProvider.andrew()
-    elif config.mask_detector == MASK_DETECTOR_ASHISH:
-        return MaskDetectorProvider.ashish()
-    else:
-        raise ValueError(f'Unknown mask detector implementation: {config.mask_detector}. Must be one of: {ALL_MASK_DETECTORS}')
-
-
 def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
     frame_size = config.frame_size
     return FrameCallback(lambda frame: process_frame(frame, face, mask, match_size=IMAGE_SIZE, resize_to=frame_size))
@@ -242,8 +223,8 @@ if __name__ == '__main__':
     debug(FaceDetectorProvider.version)
     debug(MaskDetectorProvider.version)
 
-    faces: FaceDetector = get_face_detector(args)
-    masks = get_mask_detector(args)
+    faces: FaceDetector = FaceDetectorProvider.get_face_detector(args)
+    masks = MaskDetectorProvider.get_mask_detector(args)
     callback: FrameCallback = get_callback(args, faces, masks)
 
     gui = GUI(title=args.title, width=args.width, height=args.height, callback=callback)
