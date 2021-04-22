@@ -85,7 +85,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
 
     (frame_height, frame_width) = np.shape(frame)[:2]
 
-    images, coordinates, boundaries = [], [], []
+    images, face_coordinates, crop_coordinates = [], [], []
     masked, unmasked, unknown = 0, 0, 0
 
     detections = face.detect(frame)  # TODO: train for faces with and without masks
@@ -116,14 +116,13 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             expect(lambda: (crop_right - crop_left) == match_size, lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {match_size}) = {crop_right - crop_left} == {match_size}')
             expect(lambda: (crop_bottom - crop_top) == match_size, lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}')
 
-        inside = face_left <= crop_left and face_top <= crop_top and face_right >= crop_right and face_bottom >= crop_bottom
+        face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
 
-        face_coordinates = (face_left, face_top, face_right, face_bottom)
-        crop_coordinates = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)  # TODO: determine proper offset...
+        face_location = (face_left, face_top, face_right, face_bottom)
+        crop_location = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)  # TODO: determine proper offset...
+        target_location = crop_location if face_inside_crop else face_location
 
-        target = crop_coordinates if inside else face_coordinates
-        image = dlib.sub_image(img=frame, rect=dlib.rectangle(*target))
-
+        image = dlib.sub_image(img=frame, rect=dlib.rectangle(*target_location))
         (width, height) = np.shape(image)[:2]
 
         # TODO: more expensive than correctly determining the coordinates...
@@ -133,22 +132,22 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             (width, height) = np.shape(image)[:2]
 
         if width == height == match_size:
-            coordinates.append(face_coordinates)
-            boundaries.append(crop_coordinates)
+            face_coordinates.append(face_location)
+            crop_coordinates.append(crop_location)
             images.append(image)
         else:
             unknown += 1
-            draw_boxes(frame, face_coordinates, COLOUR_WHITE, 'Unknown', crop_coordinates, COLOUR_BLUE, f'Unprocessable ({width}x{height})')
+            draw_boxes(frame, face_location, COLOUR_WHITE, 'Unknown', crop_location, COLOUR_BLUE, f'Unprocessable ({width}x{height})')
 
         if is_debug():
             debug(lambda: '---start---')
             debug(lambda: f'face_x_offset: {face_x_offset}, face_y_offset: {face_y_offset}')
             debug(lambda: f'crop_x_offset: {crop_x_offset}, crop_y_offset: {crop_y_offset}')
             debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}')
-            debug(lambda: f'face_boundary: {f}')
-            debug(lambda: f'crop_boundary: {b}')
+            debug(lambda: f'face_boundary: {face_location}')
+            debug(lambda: f'crop_boundary: {crop_location}')
             debug(lambda: f'shape: {width}x{height}')
-            debug(lambda: f'inside: {inside}')
+            debug(lambda: f'face_inside_crop: {face_inside_crop}')
             debug(lambda: '---face---')
             debug(lambda: f'[L {pad(face_left)}, R {pad(face_right)}, W {pad(face_width)}]')
             debug(lambda: f'[T {pad(face_top)}, B {pad(face_bottom)}, H {pad(face_height)}]')
@@ -165,7 +164,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         if is_debug():
             debug(lambda: f'Predictions: {predictions}')
 
-        for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
+        for index, (p, f, b) in enumerate(zip(predictions, face_coordinates, crop_coordinates)):
             m, u = draw_hit(frame, index, p, f, b)
             masked += m
             unmasked += u
