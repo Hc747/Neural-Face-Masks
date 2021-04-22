@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import dlib
 import numpy as np
@@ -67,12 +69,13 @@ def pad(value: int, size: int = 3) -> str:
 
 
 def delta(v: int) -> int:
-    return -v // 2 if v < 0 else v // 2 if v > 0 else 0
+    return int(-v // 2 if v < 0 else v // 2 if v > 0 else 0)
 
 
 # dlib cnn detector and then batch classify using
 # weak cnn ensemble
 # retrain dlib?
+# TODO: resize and scale down if face is larger than boundary!!!
 def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: Optional[int] = None):
     if resize_to is not None:
         frame = crop_square(frame, resize_to)
@@ -82,9 +85,8 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
 
     (frame_height, frame_width) = np.shape(frame)[:2]
 
-    images = []
-    coordinates = []
-    boundaries = []
+    images, coordinates, boundaries = [], [], []
+    masked, unmasked, unknown = 0, 0, 0
 
     detections = face.detect(frame)  # TODO: train for faces with and without masks
     for detection in detections:
@@ -94,18 +96,17 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
         face_top, face_bottom = bind(face_top, face_bottom, 0, frame_height)
 
-        # TODO: account for if face is too close (too large)...
-        dx: int = delta(match_size - face_width)
-        dy: int = delta(match_size - face_height)
+        face_x_offset: int = delta(match_size - face_width)
+        face_y_offset: int = delta(match_size - face_height)
 
-        crop_left, crop_right = face_left - dx, face_right + dx
-        offset_x = (match_size - (crop_right - crop_left))
+        crop_left, crop_right = face_left - face_x_offset, face_right + face_x_offset
+        crop_top, crop_bottom = face_top - face_y_offset, face_bottom + face_y_offset
 
-        crop_top, crop_bottom = face_top - dy, face_bottom + dy
-        offset_y = (match_size - (crop_bottom - crop_top))
+        crop_x_offset: int = delta(match_size - (crop_right - crop_left))
+        crop_y_offset: int = delta(match_size - (crop_bottom - crop_top))
 
-        crop_left, crop_right = bind(crop_left - offset_x, crop_right, 0, frame_width)
-        crop_top, crop_bottom = bind(crop_top - offset_y, crop_bottom, 0, frame_height)
+        crop_left, crop_right = bind(crop_left + crop_x_offset, crop_right - crop_x_offset, 0, frame_width)
+        crop_top, crop_bottom = bind(crop_top + crop_y_offset, crop_bottom - crop_y_offset, 0, frame_height)
 
         if is_assertions_enabled():
             expect(lambda: 0 < match_size < frame_width, lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_width}')
@@ -115,52 +116,64 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             expect(lambda: (crop_right - crop_left) == match_size, lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {match_size}) = {crop_right - crop_left} == {match_size}')
             expect(lambda: (crop_bottom - crop_top) == match_size, lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}')
 
-        f = (face_left, face_top, face_right, face_bottom)
-        b = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)
-        i = dlib.sub_image(img=frame, rect=dlib.rectangle(*b))
+        inside = face_left <= crop_left and face_top <= crop_top and face_right >= crop_right and face_bottom >= crop_bottom
 
-        (width, height) = np.shape(i)[:2]
+        face_coordinates = (face_left, face_top, face_right, face_bottom)
+        crop_coordinates = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)  # TODO: determine proper offset...
+
+        target = crop_coordinates if inside else face_coordinates
+        image = dlib.sub_image(img=frame, rect=dlib.rectangle(*target))
+
+        (width, height) = np.shape(image)[:2]
+
+        # TODO: more expensive than correctly determining the coordinates...
+        # TODO: adequate workaround for now...
+        if width != match_size or height != match_size:
+            image = cv2.resize(image, (match_size, match_size), interpolation=cv2.INTER_AREA)
+            (width, height) = np.shape(image)[:2]
 
         if width == height == match_size:
-            coordinates.append(f)
-            boundaries.append(b)
-            images.append(i)
+            coordinates.append(face_coordinates)
+            boundaries.append(crop_coordinates)
+            images.append(image)
         else:
-            draw_boxes(frame, f, COLOUR_WHITE, '', b, COLOUR_WHITE, f'Unprocessable ({width}x{height})')
+            unknown += 1
+            draw_boxes(frame, face_coordinates, COLOUR_WHITE, 'Unknown', crop_coordinates, COLOUR_BLUE, f'Unprocessable ({width}x{height})')
 
         if is_debug():
-            debug(lambda: f'face_image_boundary: (l,t,r,b){f}, face_image_shape: {np.shape(i)}')
-            debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}, dx: {dx}, dy: {dy}, offset_x: {offset_x}, offset_y: {offset_y}')
+            debug(lambda: '---start---')
+            debug(lambda: f'face_x_offset: {face_x_offset}, face_y_offset: {face_y_offset}')
+            debug(lambda: f'crop_x_offset: {crop_x_offset}, crop_y_offset: {crop_y_offset}')
+            debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}')
+            debug(lambda: f'face_boundary: {f}')
+            debug(lambda: f'crop_boundary: {b}')
+            debug(lambda: f'shape: {width}x{height}')
+            debug(lambda: f'inside: {inside}')
             debug(lambda: '---face---')
             debug(lambda: f'[L {pad(face_left)}, R {pad(face_right)}, W {pad(face_width)}]')
             debug(lambda: f'[T {pad(face_top)}, B {pad(face_bottom)}, H {pad(face_height)}]')
-            debug(lambda: '---face---')
             debug(lambda: '---mask---')
-            debug(lambda: f'[L {pad(crop_left)}, R {pad(crop_right)}]')
-            debug(lambda: f'[T {pad(crop_top)}, B {pad(crop_bottom)}]')
-            debug(lambda: '---mask---')
+            debug(lambda: f'[L {pad(crop_left)}, R {pad(crop_right)}, W {pad(crop_right - crop_left)}]')
+            debug(lambda: f'[T {pad(crop_top)}, B {pad(crop_bottom)}, H {pad(crop_bottom - crop_top)}]')
+            debug(lambda: '---end---')
+            debug(lambda: '')
 
-    if len(images) <= 0:
+    if len(images) > 0:
+        images = np.asarray(images)
+        predictions = mask.predict(images)
+
         if is_debug():
-            debug(lambda: f'No faces detected - short circuiting')
-        return Image.fromarray(frame)
+            debug(lambda: f'Predictions: {predictions}')
 
-    images = np.asarray(images)
-    predictions = mask.predict(images)
+        for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
+            m, u = draw_hit(frame, index, p, f, b)
+            masked += m
+            unmasked += u
 
-    if is_debug():
-        debug(lambda: f'Predictions: {predictions}')
-
-    masked, unmasked = 0, 0
-    for index, (p, f, b) in enumerate(zip(predictions, coordinates, boundaries)):
-        m, u = draw_hit(frame, index, p, f, b)
-        masked += m
-        unmasked += u
-
-    draw_stats(frame, masked, unmasked)
+    draw_stats(frame, masked, unmasked, unknown)
 
     if is_debug():
-        debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}')
+        debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}, Unknown faces: {unknown}')
 
     return Image.fromarray(frame)
 
@@ -190,6 +203,7 @@ def draw_hit(frame, index, prediction, face, boundary):
 
 def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
     frame_size = config.frame_size
+    # frame_size = None
 
     def fn(frame):
         return process_frame(frame, face, mask, match_size=IMAGE_SIZE, resize_to=frame_size)

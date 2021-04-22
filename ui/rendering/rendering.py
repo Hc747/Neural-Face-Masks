@@ -16,6 +16,7 @@ def draw_boxes(frame, face_coordinates, face_colour, face_label, boundary_coordi
     cv2.putText(frame, text=boundary_label, org=(boundary_coordinates[0], boundary_coordinates[1] - offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=boundary_colour)
 
 
-def draw_stats(frame, masked: int, unmasked: int):
+def draw_stats(frame, masked: int, unmasked: int, unknown: int):
     cv2.putText(frame, f'Masked: {masked}', org=(0, 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_GREEN)
     cv2.putText(frame, f'Unmasked: {unmasked}', org=(0, 25), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_RED)
+    cv2.putText(frame, f'Unknown: {unknown}', org=(0, 40), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_WHITE)
