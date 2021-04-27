@@ -1,8 +1,10 @@
+import math
 import cv2
 import dlib
 import numpy as np
 from PIL import Image
 from typing import Optional
+from keras.models import Model  # TODO: return layer of abstraction
 from config import args, debug, expect, is_debug, is_assertions_enabled
 from constants import *
 from detectors.face.detectors import FaceDetectorProvider, FaceDetector
@@ -70,11 +72,53 @@ def delta(v: int) -> int:
     return int(-v // 2 if v < 0 else v // 2 if v > 0 else 0)
 
 
+def delta_ceil(v: int) -> int:
+    return int(math.ceil(-v / 2 if v < 0 else v / 2 if v > 0 else 0))
+
+
+# TODO: i suck at maths, so this is necessary...
+def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width: int, frame_height: int):
+    l, t, r, b = 0, 0, 0, 0
+
+    def w():
+        return (right + r) - (left + l)
+
+    def h():
+        return (bottom + b) - (top + t)
+
+    width: int = w()
+    while width != target:
+        diff: int = target - width
+        even: bool = diff % 2 == 0
+        pos: bool = diff > 0
+
+        if even:
+            l += -1 if pos else 1
+        else:
+            r += 1 if pos else -1
+        width = w()
+
+    height: int = h()
+    while height != target:
+        diff: int = target - height
+        even: bool = diff % 2 == 0
+        pos: bool = diff > 0
+
+        if even:
+            t += -1 if pos else 1
+        else:
+            b += 1 if pos else -1
+        height = h()
+
+    le, ri = bind(left + l, right + r, 0, frame_width)
+    to, bo = bind(top + t, bottom + b, 0, frame_height)
+    return le, to, ri, bo
+
 # dlib cnn detector and then batch classify using
 # weak cnn ensemble
 # retrain dlib?
 # TODO: resize and scale down if face is larger than boundary!!!
-def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: Optional[int] = None):
+def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resize_to: Optional[int] = None):
     if resize_to is not None:
         frame = crop_square(frame, resize_to)
 
@@ -100,8 +144,11 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
         crop_left, crop_right = face_left - face_x_offset, face_right + face_x_offset
         crop_top, crop_bottom = face_top - face_y_offset, face_bottom + face_y_offset
 
-        crop_x_offset: int = delta(match_size - (crop_right - crop_left))
-        crop_y_offset: int = delta(match_size - (crop_bottom - crop_top))
+        vx: int = match_size - (crop_right - crop_left)
+        vy: int = match_size - (crop_bottom - crop_top)
+
+        crop_x_offset, crop_x_ceil = delta(vx), delta_ceil(vx)
+        crop_y_offset, crop_y_ceil = delta(vy), delta_ceil(vy)
 
         crop_left, crop_right = bind(crop_left + crop_x_offset, crop_right - crop_x_offset, 0, frame_width)
         crop_top, crop_bottom = bind(crop_top + crop_y_offset, crop_bottom - crop_y_offset, 0, frame_height)
@@ -115,19 +162,24 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             expect(lambda: (crop_bottom - crop_top) == match_size, lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}')
 
         face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
-
         face_location = (face_left, face_top, face_right, face_bottom)
-        crop_location = (crop_left, crop_top, crop_right - 1, crop_bottom - 1)  # TODO: determine proper offset...
-        target_location = crop_location if face_inside_crop else face_location
+        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width, frame_height)
 
-        image = dlib.sub_image(img=frame, rect=dlib.rectangle(*target_location))
+        if face_inside_crop:
+            image = dlib.sub_image(img=frame, rect=dlib.rectangle(*crop_location))
+        else:
+            image = cv2.resize(dlib.sub_image(img=frame, rect=dlib.rectangle(*face_location)), (match_size, match_size))
+
         (width, height) = np.shape(image)[:2]
 
         # TODO: more expensive than correctly determining the coordinates...
         # TODO: adequate workaround for now...
+        # if width != match_size or height != match_size:
+        #     debug(lambda: f'Slooooooooow')
+        #     image = cv2.resize(image, (match_size, match_size), interpolation=cv2.INTER_AREA)
+        #     (width, height) = np.shape(image)[:2]
         if width != match_size or height != match_size:
-            image = cv2.resize(image, (match_size, match_size), interpolation=cv2.INTER_AREA)
-            (width, height) = np.shape(image)[:2]
+            debug(lambda: 'Size mismatch...')
 
         if width == height == match_size:
             face_coordinates.append(face_location)
@@ -141,6 +193,7 @@ def process_frame(frame, face: FaceDetector, mask, match_size: int, resize_to: O
             debug(lambda: '---start---')
             debug(lambda: f'face_x_offset: {face_x_offset}, face_y_offset: {face_y_offset}')
             debug(lambda: f'crop_x_offset: {crop_x_offset}, crop_y_offset: {crop_y_offset}')
+            debug(lambda: f'crop_x_ceil: {crop_x_ceil}, crop_y_ceil: {crop_y_ceil}')
             debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}')
             debug(lambda: f'face_boundary: {face_location}')
             debug(lambda: f'crop_boundary: {crop_location}')
@@ -198,7 +251,7 @@ def draw_hit(frame, index, prediction, face, boundary):
     return masked, unmasked
 
 
-def get_callback(config, face: FaceDetector, mask) -> FrameCallback:
+def get_callback(config, face: FaceDetector, mask: Model) -> FrameCallback:
     frame_size = config.frame_size
     # frame_size = None
 
@@ -214,7 +267,7 @@ if __name__ == '__main__':
     debug(MaskDetectorProvider.version)
 
     faces: FaceDetector = FaceDetectorProvider.get_face_detector(args)
-    masks = MaskDetectorProvider.get_mask_detector(args)
+    masks: Model = MaskDetectorProvider.get_mask_detector(args)
     callback: FrameCallback = get_callback(args, faces, masks)
 
     gui = GUI(title=args.title, width=args.width, height=args.height, callback=callback)

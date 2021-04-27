@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from distutils.util import strtobool
 from constants import MASK_DETECTOR_ASHISH, FACE_DETECTOR_SVM
 
@@ -59,10 +60,10 @@ def is_assertions_enabled() -> bool:
 
 # export debug statement or no-op
 if __debug:
-    def debug(message):
-        print(message())
+    def debug(message, out=sys.stdout):
+        print(message(), file=out)
 else:
-    def debug(message):
+    def debug(message, out=None):
         pass
 
 # export expect statement or no-op
