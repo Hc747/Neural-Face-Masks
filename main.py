@@ -80,10 +80,10 @@ def delta_ceil(v: int) -> int:
 def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width: int, frame_height: int):
     l, t, r, b = 0, 0, 0, 0
 
-    def w():
+    def w() -> int:
         return (right + r) - (left + l)
 
-    def h():
+    def h() -> int:
         return (bottom + b) - (top + t)
 
     width: int = w()

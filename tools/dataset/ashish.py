@@ -25,7 +25,8 @@ def generate(shape, _input, _output, args):
     training_directory: str = os.path.join(base_directory, 'training')
     training_provider = ImageDataGenerator(
         rescale=1. / 255,
-        rotation_range=40,
+        rotation_range=45,
+        brightness_range=[0.2, 1.0],
         width_shift_range=0.2,
         height_shift_range=0.2,
         shear_range=0.2,
