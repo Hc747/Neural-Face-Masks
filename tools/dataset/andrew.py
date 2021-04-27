@@ -1,6 +1,7 @@
 import os
 import xml.etree.ElementTree as et
 import numpy as np
+from typing import Tuple
 from tensorflow.keras.applications import VGG16
 from keras.utils.np_utils import to_categorical
 from keras_preprocessing.image import img_to_array, load_img, ImageDataGenerator
@@ -9,9 +10,13 @@ from sklearn.preprocessing import LabelEncoder
 from constants import IMAGE_SIZE, RANDOM_STATE
 from network.network_architecture import ClassificationRegressionNetwork, LOSS_FUNCTIONS, LOSS_WEIGHTS, \
     ClassificationNetwork, CLASSIFICATION_NETWORK_NAME, BOUNDARY_NETWORK_NAME, NETWORKS
+from tools.dataset.common import augmentor
+
+DUPLICATE: bool = False
+REGRESSION: bool = False
 
 
-def generate(shape, _input, _output, args):
+def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _input: str, _output: str):
     base_directory: str = os.path.join(_input, 'kaggle', 'andrewmvd')
 
     image_directory: str = os.path.join(base_directory, 'images')
@@ -58,7 +63,7 @@ def generate(shape, _input, _output, args):
             labels.append(label)
             boundaries.append(coordinates)
 
-            if not args.duplicate:
+            if not DUPLICATE:
                 break
 
     images = np.asarray(images)
@@ -76,9 +81,9 @@ def generate(shape, _input, _output, args):
     (train_labels, test_labels) = splits[2:4]
     (train_boundaries, test_boundaries) = splits[4:6]
 
-    base = NETWORKS.get(args.network, VGG16)
+    base = NETWORKS.get(network, VGG16)
 
-    if args.regression:
+    if REGRESSION:
         output = os.path.join(_output, 'regression', 'checkpoint')
         train_targets = {
             BOUNDARY_NETWORK_NAME: train_boundaries,
@@ -92,6 +97,7 @@ def generate(shape, _input, _output, args):
 
         x = train_images
         y = train_targets
+        training = (x, y)
         validation = (test_images, test_targets)
 
         architecture = ClassificationRegressionNetwork(base=base, shape=shape, classes=classes)
@@ -99,23 +105,17 @@ def generate(shape, _input, _output, args):
 
     else:
         output = os.path.join(_output, 'classification', 'checkpoint')
-
-        generator = ImageDataGenerator(
-            rescale=1. / 255,
-            rotation_range=40,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.2,
-            horizontal_flip=True,
-            fill_mode='nearest'
-        )
-
+        generator = augmentor
         x = generator.flow(train_images, train_labels, seed=RANDOM_STATE)
         y = None
+        training = (x, y)
         validation = (test_images, test_labels)
 
-        architecture = ClassificationNetwork(base=base, shape=shape, classes=classes)
+        if modify_base:
+            architecture = ClassificationNetwork(base=base, shape=shape, classes=classes)
+        else:
+            architecture = ClassificationNetwork.unmodified_base(base=base, shape=shape, classes=classes)
+
         model = architecture.compile(LOSS_FUNCTIONS[CLASSIFICATION_NETWORK_NAME], None)
 
-    return (x, y, validation), (architecture, model, classes, output), (images, labels, boundaries)
+    return (training, validation), (architecture, model, classes, output), (images, labels, boundaries)

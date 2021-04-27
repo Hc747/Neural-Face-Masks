@@ -37,11 +37,34 @@ class NetworkArchitecture(metaclass=abc.ABCMeta):
         return model
 
 
+class BaseVGG16ClassificationNetwork(NetworkArchitecture):
+    def __init__(self, shape, classes):
+        self.__shape = shape
+        self.__classes = classes
+
+    def model(self):
+        base = VGG16(weights='imagenet', include_top=False, input_shape=self.__shape, classes=self.__classes)
+        base.trainable = False
+
+        head = Flatten(name='flatten')(base.output)
+        classification = Dense(4096, activation='relu', name='fc1')(head)
+        classification = Dense(4096, activation='relu', name='fc2')(classification)
+        classification = Dense(self.__classes, activation='softmax', name='predictions')(classification)
+        return Model(inputs=base.input, outputs=classification)
+
+
 class ClassificationNetwork(NetworkArchitecture):
     def __init__(self, base, shape, classes):
         self.base = base
         self.__shape = shape
         self.__classes = classes
+
+    @staticmethod
+    def unmodified_base(base, shape, classes):
+        if base == VGG16:
+            return BaseVGG16ClassificationNetwork(shape, classes)
+        else:
+            raise ValueError(f'Unknown base classification network: {base}')
 
     def model(self):
         base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)

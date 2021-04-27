@@ -3,6 +3,7 @@ from cv2 import FONT_HERSHEY_SIMPLEX
 
 IMAGE_SIZE: int = 224
 IMAGE_CHANNELS: int = 3
+IMAGE_SHAPE: Tuple[int, int, int] = (IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS)
 
 COLOUR_RED: Tuple[int, int, int] = (255, 0, 0)
 COLOUR_GREEN: Tuple[int, int, int] = (0, 255, 0)

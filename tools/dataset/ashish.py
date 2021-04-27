@@ -1,8 +1,10 @@
 import os
+from typing import Tuple
 from keras_preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import VGG16
 from constants import RANDOM_STATE
 from network.network_architecture import LOSS_FUNCTIONS, ClassificationNetwork, CLASSIFICATION_NETWORK_NAME, NETWORKS
+from tools.dataset.common import augmentor
 
 CLASS_MODE = 'categorical'
 
@@ -19,33 +21,29 @@ def flow(provider, directory, shape):
     )
 
 
-def generate(shape, _input, _output, args):
+def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _input: str, _output: str):
     base_directory: str = os.path.join(_input, 'kaggle', 'ashishjangra27', 'face-mask-12k-images-dataset')
 
     training_directory: str = os.path.join(base_directory, 'training')
-    training_provider = ImageDataGenerator(
-        rescale=1. / 255,
-        rotation_range=45,
-        brightness_range=[0.2, 1.0],
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
-    )
+    training_provider = augmentor
 
     validation_directory: str = os.path.join(base_directory, 'validation')
     validation_provider = ImageDataGenerator(rescale=1. / 255)
 
     x = flow(training_provider, training_directory, shape)
     y = None
-    validation = flow(validation_provider, validation_directory, shape)
+    training = (x, y)
+    validation = (flow(validation_provider, validation_directory, shape), None)
 
     output = os.path.join(_output, 'classification', 'checkpoint')
     classes = ['Masked', 'Unmasked']
-    base = NETWORKS.get(args.network, VGG16)
-    architecture = ClassificationNetwork(base=base, shape=shape, classes=classes)
+    base = NETWORKS.get(network, VGG16)
+
+    if modify_base:
+        architecture = ClassificationNetwork(base=base, shape=shape, classes=classes)
+    else:
+        architecture = ClassificationNetwork.unmodified_base(base=base, shape=shape, classes=classes)
+
     model = architecture.compile(LOSS_FUNCTIONS[CLASSIFICATION_NETWORK_NAME], None)
 
-    return (x, y, validation), (architecture, model, classes, output)
+    return (training, validation), (architecture, model, classes, output)

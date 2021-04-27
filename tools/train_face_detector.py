@@ -1,7 +1,10 @@
 import argparse
 import os
+import keras
 import tensorflow as tf
+from typing import Optional
 from constants import IMAGE_SIZE, IMAGE_CHANNELS, MASK_DETECTOR_ASHISH, MASK_DETECTOR_ANDREW, ALL_MASK_DETECTORS
+from tools.job.train_job import train
 
 __root = os.path.abspath('..')
 ROOT_INPUT_LOCATION: str = os.path.join(__root, 'data')
@@ -11,55 +14,44 @@ ROOT_OUTPUT_LOCATION: str = os.path.join(__root, 'models', 'mask')
 DEFAULT_EPOCHS: int = 15
 DEFAULT_NETWORK: str = 'vgg16'
 DEFAULT_DATASET: str = MASK_DETECTOR_ANDREW
-DEFAULT_DUPLICATE: bool = False
-DEFAULT_REGRESSION: bool = False
 
 __parser = argparse.ArgumentParser()
 __parser.add_argument('--network', default=DEFAULT_NETWORK, type=str, help='The network architecture to use for bootstrapping')
+__parser.add_argument('--modify_base', default=True, type=bool, help='Whether or not to use the custom or base network implementation')
 __parser.add_argument('--epochs', default=DEFAULT_EPOCHS, type=int, help='The number of iterations')
 __parser.add_argument('--dataset', default=DEFAULT_DATASET, type=str, help='Dataset to train model with')
-__parser.add_argument('--duplicate', default=DEFAULT_DUPLICATE, type=bool, help='Use duplicate images')
-__parser.add_argument('--regression', default=DEFAULT_REGRESSION, type=bool, help='Train a classification regression network instead of a classification network')
+__parser.add_argument('--checkpoint', type=str, help='The checkpoint to load from')
+__parser.add_argument('--discriminator', type=str, help='The run discriminator of this training session')
+__parser.add_argument('--resume', default=True, type=bool, help='Resume training from specified checkpoint')
 # TODO: individual configs..?
 
 args = __parser.parse_args()
 
 print(f'Args: {args}')
+print(f'Tensorflow API Version: {tf.__version__}')
+print(f'Keras API Version: {keras.__version__}')
+print(f'GPUS: {tf.config.list_physical_devices("GPU")}')
 
-dataset = args.dataset
+network: str = args.network
+modify_base: bool = args.modify_base
+checkpoint: Optional[str] = args.checkpoint
+discriminator: Optional[str] = args.discriminator
+dataset: str = args.dataset
+epochs: int = args.epochs
+resume: bool = args.resume
+
 SHAPE = (IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS)
 output_directory_base = os.path.join(ROOT_OUTPUT_LOCATION, dataset)
 
-if dataset == MASK_DETECTOR_ANDREW:
-    from tools.dataset.andrew import generate
-elif dataset == MASK_DETECTOR_ASHISH:
-    from tools.dataset.ashish import generate
-else:
-    raise ValueError(f'Unknown dataset: {dataset}. Must be one of: {ALL_MASK_DETECTORS}')
-
-(x, y, validation), (architecture, model, classes, output) = generate(
-    SHAPE,
-    ROOT_INPUT_LOCATION,
-    output_directory_base,
-    args
-)
-
-model.summary()
-
-checkpoint = tf.keras.callbacks.ModelCheckpoint(
-    filepath=output,
-    monitor='val_loss',
-    mode='auto',
-    save_weights_only=False,
-    save_best_only=True,
-    verbose=1
-)
-
-history = model.fit(
-    x,
-    y,
-    validation_data=validation,
-    epochs=args.epochs,
-    callbacks=[checkpoint],
-    verbose=1
+model, history, architecture, classes = train(
+    root_input=ROOT_INPUT_LOCATION,
+    root_output=ROOT_OUTPUT_LOCATION,
+    shape=SHAPE,
+    epochs=epochs,
+    resume=resume,
+    network=network,
+    modify_base=modify_base,
+    dataset=dataset,
+    checkpoint=checkpoint,
+    run_discriminator=discriminator
 )
