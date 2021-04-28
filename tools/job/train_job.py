@@ -20,7 +20,7 @@ def train(root_input: str, root_output: str, shape: Tuple[int, int, int], epochs
     discriminator: str = f'{time.time_ns() // 1_000_000}' if run_discriminator is None else run_discriminator
     extension: str = f'{network}' + '-checkpoint-{epoch:04d}'
 
-    ((x_train, y_train), (x_validation, y_validation)), (architecture, model, classes, output) = generate(
+    ((x_train, y_train), (x_validation, y_validation), (x_test, y_test)), (architecture, model, classes, output) = generate(
         shape=shape,
         network=network,
         modify_base=modify_base,
@@ -64,4 +64,4 @@ def train(root_input: str, root_output: str, shape: Tuple[int, int, int], epochs
     else:
         history = None
 
-    return model, history, architecture, classes
+    return model, history, architecture, classes, (x_test, y_test)
