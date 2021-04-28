@@ -2,14 +2,14 @@ import os
 from typing import Tuple
 from keras_preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import VGG16
-from constants import RANDOM_STATE
+from constants import RANDOM_STATE, VALIDATION_SPLIT
 from network.network_architecture import LOSS_FUNCTIONS, ClassificationNetwork, CLASSIFICATION_NETWORK_NAME, NETWORKS
-from tools.dataset.common import augmentor
+from tools.dataset.common import get_standard_augmentor
 
 CLASS_MODE = 'categorical'
 
 
-def flow(provider, directory, shape):
+def flow(provider, directory, shape, subset=None):
     (w, h, channels) = shape
     color_mode: str = 'grayscale' if channels == 1 else 'rgb'
     return provider.flow_from_directory(
@@ -17,7 +17,8 @@ def flow(provider, directory, shape):
         color_mode=color_mode,
         target_size=(w, h),
         seed=RANDOM_STATE,
-        class_mode=CLASS_MODE
+        class_mode=CLASS_MODE,
+        subset=subset
     )
 
 
@@ -25,15 +26,15 @@ def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _inpu
     base_directory: str = os.path.join(_input, 'kaggle', 'ashishjangra27', 'face-mask-12k-images-dataset')
 
     training_directory: str = os.path.join(base_directory, 'training')
-    training_provider = augmentor
+    training_provider = get_standard_augmentor(split=VALIDATION_SPLIT)
+    validation_provider = ImageDataGenerator(rescale=1. / 255, validation_split=VALIDATION_SPLIT)
 
-    validation_directory: str = os.path.join(base_directory, 'validation')
-    validation_provider = ImageDataGenerator(rescale=1. / 255)
+    testing_directory: str = os.path.join(base_directory, 'validation')  # testing doesn't contain unmasked faces...
+    testing_provider = ImageDataGenerator(rescale=1. / 255)
 
-    x = flow(training_provider, training_directory, shape)
-    y = None
-    training = (x, y)
-    validation = (flow(validation_provider, validation_directory, shape), None)
+    training = (flow(training_provider, training_directory, shape, subset='training'), None)
+    validation = (flow(validation_provider, training_directory, shape, subset='validation'), None)
+    testing = (flow(testing_provider, testing_directory, shape), None)
 
     output = os.path.join(_output, 'classification', 'checkpoint')
     classes = ['Masked', 'Unmasked']
@@ -46,4 +47,4 @@ def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _inpu
 
     model = architecture.compile(LOSS_FUNCTIONS[CLASSIFICATION_NETWORK_NAME], None)
 
-    return (training, validation), (architecture, model, classes, output)
+    return (training, validation, testing), (architecture, model, classes, output)
