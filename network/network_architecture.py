@@ -1,4 +1,6 @@
 import abc
+from abc import ABC
+
 from tensorflow.keras import Model
 from tensorflow.keras.applications import *
 from tensorflow.keras.layers import *
@@ -37,13 +39,19 @@ class NetworkArchitecture(metaclass=abc.ABCMeta):
         return model
 
 
-class BaseVGG16ClassificationNetwork(NetworkArchitecture):
+class StandardNetworkArchitecture(NetworkArchitecture, ABC):
     def __init__(self, shape, classes):
         self.__shape = shape
         self.__classes = classes
 
+
+class StandardVGGNetworkArchitecture(StandardNetworkArchitecture):
+    def __init__(self, shape, classes, vgg):
+        super().__init__(shape, classes)
+        self.__vgg = vgg
+
     def model(self):
-        base = VGG16(weights='imagenet', include_top=False, input_shape=self.__shape, classes=self.__classes)
+        base = self.__vgg(weights='imagenet', include_top=False, input_shape=self.__shape, classes=self.__classes)
         base.trainable = False
 
         head = Flatten(name='flatten')(base.output)
@@ -53,18 +61,37 @@ class BaseVGG16ClassificationNetwork(NetworkArchitecture):
         return Model(inputs=base.input, outputs=classification)
 
 
+class StandardResnetNetworkArchitecture(StandardNetworkArchitecture):
+    def __init__(self, shape, classes, resnet):
+        super().__init__(shape, classes)
+        self.__resnet = resnet
+
+    def model(self):
+        base = self.__resnet(weights='imagenet', include_top=False, input_shape=self.__shape, classes=self.__classes)
+        base.trainable = False
+
+        head = GlobalAveragePooling2D(name='avg_pool')(base.output)
+        classification = Dense(self.__classes, activation='softmax', name='predictions')(head)
+        return Model(inputs=base.input, outputs=classification)
+
+
 class ClassificationNetwork(NetworkArchitecture):
+    __VGG_NETWORKS = [VGG16, VGG19]
+    __RESNET_NETWORKS = [ResNet50, ResNet50V2, ResNet101, ResNet101V2, ResNet152, ResNet152V2]
+
     def __init__(self, base, shape, classes):
         self.base = base
         self.__shape = shape
         self.__classes = classes
 
     @staticmethod
-    def unmodified_base(base, shape, classes):
-        if base == VGG16:
-            return BaseVGG16ClassificationNetwork(shape, classes)
+    def standard_architecture(network, shape, classes):
+        if network in ClassificationNetwork.__VGG_NETWORKS:
+            return StandardVGGNetworkArchitecture(shape, classes, vgg=network)
+        elif network in ClassificationNetwork.__RESNET_NETWORKS:
+            return StandardResnetNetworkArchitecture(shape, classes, resnet=network)
         else:
-            raise ValueError(f'Unknown base classification network: {base}')
+            raise ValueError(f'Unknown base classification network: {network}')
 
     def model(self):
         base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)

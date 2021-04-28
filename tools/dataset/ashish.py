@@ -42,7 +42,7 @@ def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _inpu
     if modify_base:
         architecture = ClassificationNetwork(base=base, shape=shape, classes=classes)
     else:
-        architecture = ClassificationNetwork.unmodified_base(base=base, shape=shape, classes=classes)
+        architecture = ClassificationNetwork.standard_architecture(network=base, shape=shape, classes=classes)
 
     model = architecture.compile(LOSS_FUNCTIONS[CLASSIFICATION_NETWORK_NAME], None)
 
