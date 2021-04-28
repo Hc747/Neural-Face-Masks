@@ -21,7 +21,12 @@ LOSS_WEIGHTS = {
 NETWORKS = {
     'vgg16': VGG16,
     'vgg19': VGG19,
-    'resnet': ResNet50
+    'resnet50': ResNet50,
+    'resnet50v2': ResNet50V2,
+    'resnet101': ResNet101,
+    'resnet101v2': ResNet101V2,
+    'resnet152': ResNet152,
+    'resnet152v2': ResNet152V2
 }
 
 
