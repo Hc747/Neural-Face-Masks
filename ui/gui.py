@@ -70,18 +70,23 @@ class GUI:
         photo = ImageTk.PhotoImage(image=image)
 
         canvas.configure(image=photo)
-        canvas.__cached = photo  # avoid garbage collection
+        canvas.cached = photo  # avoid garbage collection
         return True
 
-    def __update_all(self, image):
+    def __update_fps(self, fps) -> bool:
+        fps.configure(text=f'FPS: {self.__source.fps:.2f}')
+        return True
+
+    def __update_all(self, image, fps):
         root = self.__root
-        updated = self.__update_image(image)
+        # bitwise 'and' intentional in order to allow fallthrough evaluation
+        updated = self.__update_image(image) & self.__update_fps(fps)
         if updated:
             root.update()
-        root.after(self.__delay_ms, func=lambda: self.__update_all(image))
+        root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
 
     def __setup_image_source(self):
-        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, self.__delay_ms)
+        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
         source.start()
@@ -119,6 +124,10 @@ class GUI:
         api_version_canvas = Label(master=info_container, text=f'{FaceDetectorProvider.version()}\n{MaskDetectorProvider.version()}')
         api_version_canvas.pack()
 
+        # fps info
+        fps_info = Label(master=info_container, text='FPS')
+        fps_info.pack()
+
         # toggle button
         toggle_button = Button(master=controls_container, text='Toggle', command=lambda: self.__source.toggle_raw())
         toggle_button.pack(side=LEFT)
@@ -128,7 +137,7 @@ class GUI:
         exit_button.pack(side=RIGHT)
 
         # setup the update callback
-        root.after(0, func=lambda: self.__update_all(image_canvas))
+        root.after(0, func=lambda: self.__update_all(image_canvas, fps_info))
 
     def __setup(self):
         self.__setup_image_source()

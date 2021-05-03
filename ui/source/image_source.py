@@ -11,6 +11,7 @@ from ui.state import State
 
 ImageFrame = Tuple[Optional[Image.Image], int]
 EMPTY: ImageFrame = (None, 0)
+EPS = 1e-9
 
 
 class ImageSource(metaclass=abc.ABCMeta):
@@ -34,6 +35,10 @@ class ImageSource(metaclass=abc.ABCMeta):
     def raw(self):
         return self.__raw
 
+    @property
+    def fps(self) -> float:
+        return 0.0
+
     def toggle_raw(self):
         self.__raw = not self.__raw
 
@@ -50,14 +55,15 @@ class VideoImageSource(ImageSource):
     __image: ImageFrame = EMPTY
     __callback: FrameCallback
     __time: TimeSource
-    __delay: int
     __last: int = 0
 
-    def __init__(self, camera, callback: FrameCallback, time: TimeSource, delay):
+    def __init__(self, camera, callback: FrameCallback, time: TimeSource, history: int = 10):
         self.__camera = camera
         self.__callback = callback
         self.__time = time
-        self.__delay = delay
+        self.__history = history
+        self.__timing = [0.0] * history
+        self.__timing_index = 0
 
     @property
     def image(self) -> ImageFrame:
@@ -67,14 +73,13 @@ class VideoImageSource(ImageSource):
     def camera(self):
         return self.__camera
 
+    @property
+    def fps(self) -> float:
+        return self.__history / (sum(self.__timing) + EPS)
+
     def __update(self):
-        now = self.__time.millis
-        if (now - self.__last) < self.__delay:
-            return
-        self.__last = now
-
+        start = self.__time.millis
         ok, frame = self.camera.read()
-
         if ok:
             if self.raw:
                 image = ImageSource.process_raw(frame)
@@ -86,7 +91,11 @@ class VideoImageSource(ImageSource):
                     debug(lambda: f'Assertion failed: {e}')
         else:
             image = None
-        self.__image = (image, now)
+        finish = self.__last = self.__time.millis
+        duration = (finish - start) / 1_000
+        self.__timing[self.__timing_index] = duration
+        self.__timing_index = (self.__timing_index + 1) % self.__history
+        self.__image = (image, finish)
 
     def __run(self):
         while self.__state == State.RUNNING:
