@@ -4,7 +4,7 @@ from typing import Optional
 
 def get_standard_augmentor(split: Optional[float] = None) -> ImageDataGenerator:
     return ImageDataGenerator(
-        rescale=1. / 255,
+        rescale=1./255,
         rotation_range=45,
         brightness_range=[0.2, 1.0],
         width_shift_range=0.2,

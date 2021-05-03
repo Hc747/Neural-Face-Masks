@@ -122,6 +122,9 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resiz
     if resize_to is not None:
         frame = crop_square(frame, resize_to)
 
+    # TODO: scale down image for face detection (unless it adversely affects accuracy)
+    # TODO: scale up image for mask detection
+
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame = np.asarray(frame)
 
