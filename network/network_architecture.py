@@ -26,7 +26,8 @@ NETWORKS = {
     'resnet101': ResNet101,
     'resnet101v2': ResNet101V2,
     'resnet152': ResNet152,
-    'resnet152v2': ResNet152V2
+    'resnet152v2': ResNet152V2,
+    'inceptionv3': InceptionV3
 }
 
 
