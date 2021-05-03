@@ -26,11 +26,11 @@ def generate(shape: Tuple[int, int, int], network: str, modify_base: bool, _inpu
     base_directory: str = os.path.join(_input, 'kaggle', 'ashishjangra27', 'face-mask-12k-images-dataset')
 
     training_directory: str = os.path.join(base_directory, 'training')
-    training_provider = get_standard_augmentor(split=VALIDATION_SPLIT)
-    validation_provider = ImageDataGenerator(rescale=1. / 255, validation_split=VALIDATION_SPLIT)
-
     testing_directory: str = os.path.join(base_directory, 'validation')  # testing doesn't contain unmasked faces...
-    testing_provider = ImageDataGenerator(rescale=1. / 255)
+
+    training_provider = get_standard_augmentor(split=VALIDATION_SPLIT)
+    validation_provider = ImageDataGenerator(rescale=1./255, validation_split=VALIDATION_SPLIT)
+    testing_provider = ImageDataGenerator(rescale=1./255)
 
     training = (flow(training_provider, training_directory, shape, subset='training'), None)
     validation = (flow(validation_provider, training_directory, shape, subset='validation'), None)
