@@ -79,6 +79,7 @@ def delta_ceil(v: int) -> int:
 # TODO: i suck at maths, so this is necessary...
 def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width: int, frame_height: int):
     l, t, r, b = 0, 0, 0, 0
+    swap: bool = True
 
     def w() -> int:
         return (right + r) - (left + l)
@@ -89,25 +90,25 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     width: int = w()
     while width != target:
         diff: int = target - width
-        even: bool = diff % 2 == 0
-        pos: bool = diff > 0
+        pos = diff > 0
+        swap = not swap
 
-        if even:
-            l += -1 if pos else 1
+        if swap:
+            l = max(0, l - 1 if pos else l + 1)
         else:
-            r += 1 if pos else -1
+            r = min(frame_width, r + 1 if pos else r - 1)
         width = w()
 
     height: int = h()
     while height != target:
         diff: int = target - height
-        even: bool = diff % 2 == 0
-        pos: bool = diff > 0
+        pos = diff > 0
+        swap = not swap
 
-        if even:
-            t += -1 if pos else 1
+        if swap:
+            t = max(0, t - 1 if pos else t + 1)
         else:
-            b += 1 if pos else -1
+            b = min(frame_height, b + 1 if pos else b - 1)
         height = h()
 
     le, ri = bind(left + l, right + r, 0, frame_width)
@@ -166,7 +167,7 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resiz
 
         face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
         face_location = (face_left, face_top, face_right, face_bottom)
-        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width, frame_height)
+        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width - 1, frame_height - 1)
 
         if face_inside_crop:
             image = dlib.sub_image(img=frame, rect=dlib.rectangle(*crop_location))
