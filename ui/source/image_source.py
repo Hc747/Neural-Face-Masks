@@ -81,7 +81,7 @@ class VideoImageSource(ImageSource):
         start = self.__time.millis
         ok, frame = self.camera.read()
         if ok:
-            if self.raw:
+            if self.raw or self.__last == 0:
                 image = ImageSource.process_raw(frame)
             else:
                 try:
