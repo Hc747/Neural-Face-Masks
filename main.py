@@ -3,7 +3,6 @@ import cv2
 import dlib
 import numpy as np
 from PIL import Image
-from typing import Optional
 from keras.models import Model  # TODO: return layer of abstraction
 from config import args, debug, expect, is_debug, is_assertions_enabled
 from constants import *
@@ -11,7 +10,7 @@ from detectors.face.detectors import FaceDetectorProvider, FaceDetector
 from detectors.mask.detectors import MaskDetectorProvider
 from ui.callback.callback import FrameCallback
 from ui.gui import GUI
-from ui.processing.image import crop_square
+from ui.processing.image import rescale, translate_scale
 from ui.rendering.rendering import draw_stats, draw_boxes
 
 # TODO: logging
@@ -107,28 +106,21 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
 
     return le, to, ri, bo
 
-# dlib cnn detector and then batch classify using
-# weak cnn ensemble
-# retrain dlib?
-# TODO: resize and scale down if face is larger than boundary!!!
-def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resize_to: Optional[int] = None):
-    if resize_to is not None:
-        frame = crop_square(frame, resize_to)
 
-    # TODO: scale down image for face detection (unless it adversely affects accuracy)
-    # TODO: scale up image for mask detection
-
+def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0):
+    # preprocessing
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame, scaled, scale = rescale(frame, scale)
     frame = np.asarray(frame)
 
+    # state
     (frame_height, frame_width) = np.shape(frame)[:2]
-
     images, face_coordinates, crop_coordinates = [], [], []
     masked, unmasked, unknown = 0, 0, 0
 
-    detections = face.detect(frame)  # TODO: train for faces with and without masks
+    detections = face.detect(scaled)
     for detection in detections:
-        (face_left, face_top, face_width, face_height) = face.bounding_box(detection)
+        (face_left, face_top, face_width, face_height) = translate_scale(face.bounding_box(detection), scale)
         face_right, face_bottom = face_left + face_width, face_top + face_height
 
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
@@ -202,8 +194,8 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resiz
         if is_debug():
             debug(lambda: f'Predictions: {predictions}')
 
-        for index, (p, f, b) in enumerate(zip(predictions, face_coordinates, crop_coordinates)):
-            m, u = draw_hit(frame, index, p, f, b)
+        for index, (prediction, face, boundary) in enumerate(zip(predictions, face_coordinates, crop_coordinates)):
+            m, u = draw_hit(frame, index, prediction, face, boundary)
             masked += m
             unmasked += u
 
@@ -239,11 +231,10 @@ def draw_hit(frame, index, prediction, face, boundary):
 
 
 def get_callback(config, face: FaceDetector, mask: Model) -> FrameCallback:
-    frame_size = config.frame_size
-    # frame_size = None
+    scale: float = config.scale
 
     def fn(frame):
-        return process_frame(frame, face, mask, match_size=IMAGE_SIZE, resize_to=frame_size)
+        return process_frame(frame, face, mask, match_size=IMAGE_SIZE, scale=scale)
 
     return FrameCallback(fn)
 
