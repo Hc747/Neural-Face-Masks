@@ -76,10 +76,15 @@ def delta_ceil(v: int) -> int:
     return int(math.ceil(-v / 2 if v < 0 else v / 2 if v > 0 else 0))
 
 
-# TODO: i suck at maths, so this is necessary...
+def adjust(target: int, value: int, x: int, y: int, lower: int, upper: int) -> Tuple[int, int]:
+    d: float = (target - value) / 2
+    dx: int = int(math.ceil(d))
+    dy: int = int(math.floor(d))
+    return max(lower, x + (-1 * dx)), min(upper, y + dy)
+
+
 def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width: int, frame_height: int):
     l, t, r, b = 0, 0, 0, 0
-    swap: bool = True
 
     def w() -> int:
         return (right + r) - (left + l)
@@ -89,30 +94,17 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
 
     width: int = w()
     while width != target:
-        diff: int = target - width
-        pos = diff > 0
-        swap = not swap
-
-        if swap:
-            l = max(0, l - 1 if pos else l + 1)
-        else:
-            r = min(frame_width, r + 1 if pos else r - 1)
+        l, r = adjust(target, width, l, r, 0, frame_width)
         width = w()
 
     height: int = h()
     while height != target:
-        diff: int = target - height
-        pos = diff > 0
-        swap = not swap
-
-        if swap:
-            t = max(0, t - 1 if pos else t + 1)
-        else:
-            b = min(frame_height, b + 1 if pos else b - 1)
+        t, b = adjust(target, height, t, b, 0, frame_height)
         height = h()
 
     le, ri = bind(left + l, right + r, 0, frame_width)
     to, bo = bind(top + t, bottom + b, 0, frame_height)
+
     return le, to, ri, bo
 
 # dlib cnn detector and then batch classify using
@@ -175,15 +167,6 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, resiz
             image = cv2.resize(dlib.sub_image(img=frame, rect=dlib.rectangle(*face_location)), (match_size, match_size))
 
         (width, height) = np.shape(image)[:2]
-
-        # TODO: more expensive than correctly determining the coordinates...
-        # TODO: adequate workaround for now...
-        # if width != match_size or height != match_size:
-        #     debug(lambda: f'Slooooooooow')
-        #     image = cv2.resize(image, (match_size, match_size), interpolation=cv2.INTER_AREA)
-        #     (width, height) = np.shape(image)[:2]
-        if width != match_size or height != match_size:
-            debug(lambda: 'Size mismatch...')
 
         if width == height == match_size:
             face_coordinates.append(face_location)
