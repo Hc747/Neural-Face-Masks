@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 from distutils.util import strtobool
 from constants import MASK_DETECTOR_ASHISH, FACE_DETECTOR_SVM
 
@@ -13,7 +12,7 @@ DEFAULT_WIDTH: int = 1024
 DEFAULT_HEIGHT: int = 720
 DEFAULT_SCALE: float = 2.5
 DEFAULT_FACE_SIZE: int = 224
-DEFAULT_ENABLE_DEBUG: bool = True
+DEFAULT_ENABLE_DEBUG: bool = False
 DEFAULT_ENABLE_ASSERTIONS: bool = False
 DEFAULT_EXPERIMENTAL_FEATURES: bool = False
 
@@ -26,7 +25,7 @@ def __boolean(v: str) -> bool:
 # TODO: mutual exclusion
 __parser = argparse.ArgumentParser()
 __parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, type=str, help='Image source (video)')
-__parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, type=str, help='Face detector (realtime or accurate)')
+__parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, type=str, help='Face detector (cnn or svm)')
 __parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, type=str, help='Face detector models path')
 __parser.add_argument('--mask_detector', default=DEFAULT_MASK_DETECTOR, type=str, help='Mask detector implementation')
 __parser.add_argument('--debug', default=DEFAULT_ENABLE_DEBUG, type=__boolean, help='Print debug statements (True/False)')
@@ -39,37 +38,3 @@ __parser.add_argument('--experimental', default=DEFAULT_EXPERIMENTAL_FEATURES, t
 
 # publicly exported
 args = __parser.parse_args()
-
-
-__debug: bool = args.debug
-__experimental: bool = args.experimental
-__assertions_enabled: bool = args.enable_assertions
-
-
-def is_debug() -> bool:
-    return __debug
-
-
-def is_experimental() -> bool:
-    return __experimental
-
-
-def is_assertions_enabled() -> bool:
-    return __assertions_enabled
-
-
-# export debug statement or no-op
-if __debug:
-    def debug(message, out=sys.stdout):
-        print(message(), file=out)
-else:
-    def debug(message, out=None):
-        pass
-
-# export expect statement or no-op
-if __assertions_enabled:
-    def expect(condition, message):
-        assert condition(), message()
-else:
-    def expect(condition, message):
-        pass

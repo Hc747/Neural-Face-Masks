@@ -24,7 +24,7 @@ class FaceDetector:
 class FaceDetectorProvider:
     @staticmethod
     def version() -> str:
-        return f'Face detector: dlib - {dlib.__version__}'
+        return f'Face detector: dlib v{dlib.__version__}'
 
     @staticmethod
     def svm() -> FaceDetector:
@@ -35,10 +35,10 @@ class FaceDetectorProvider:
         return FaceDetector(dlib.cnn_face_detection_model_v1(filename=filename), lambda detection: detection.rect)
 
     @staticmethod
-    def get_face_detector(config) -> FaceDetector:
-        if config.face_detector == FACE_DETECTOR_SVM:
+    def get_face_detector(detector: str, **kwargs) -> FaceDetector:
+        if detector == FACE_DETECTOR_SVM:
             return FaceDetectorProvider.svm()
-        elif config.face_detector == FACE_DETECTOR_CNN:
-            return FaceDetectorProvider.cnn(config.face_detector_path)
+        elif detector == FACE_DETECTOR_CNN:
+            return FaceDetectorProvider.cnn(**kwargs)
         else:
-            raise ValueError(f'Unknown face detector implementation: {config.face_detector}. Must be one of: {ALL_FACE_DETECTORS}')
+            raise ValueError(f'Unknown face detector implementation: {detector}. Must be one of: {ALL_FACE_DETECTORS}')
