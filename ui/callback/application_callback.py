@@ -9,7 +9,7 @@ from configuration.configuration import ApplicationConfiguration, expect, debug
 from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE_SIZE
 from detectors.face.detectors import FaceDetector
 from ui.callback.callback import FrameCallback
-from ui.processing.image import rescale, translate_scale
+from ui.processing.image import rescale, translate_scale, resize
 from ui.rendering.rendering import draw_boxes, draw_stats
 
 PREDICTION_MASKED: int = 0
@@ -101,7 +101,7 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     return le, to, ri, bo
 
 
-def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0, debugging: bool = False, asserting: bool = False):
+def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0, debugging: bool = False, asserting: bool = False, experimenting: bool = False):
     # preprocessing
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame, scaled, scale = rescale(frame, scale)
@@ -152,14 +152,12 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
 
         face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
         face_location = (face_left, face_top, face_right, face_bottom)
-        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width,
-                              frame_height)
+        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width, frame_height)
 
         if face_inside_crop:
             image = dlib.sub_image(img=frame, rect=dlib.rectangle(*crop_location))
         else:
-            image = cv2.resize(dlib.sub_image(img=frame, rect=dlib.rectangle(*face_location)),
-                               (match_size, match_size))
+            image = cv2.resize(dlib.sub_image(img=frame, rect=dlib.rectangle(*face_location)), (match_size, match_size))
 
         (width, height) = np.shape(image)[:2]
 
@@ -197,10 +195,19 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
         if debugging:
             debug(lambda: f'Predictions: {predictions}')
 
-        for index, (prediction, face, boundary) in enumerate(zip(predictions, face_coordinates, crop_coordinates)):
-            m, u = draw_hit(frame, index, prediction, face, boundary)
+        for index, (prediction, face, boundary, image) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images)):
+            m, u, colour = draw_hit(frame, index, prediction, face, boundary)
             masked += m
             unmasked += u
+
+            if experimenting:
+                size: int = 32
+                height_offset: int = 64 + (size * index)
+                width_offset: int = 16
+                image = resize(image, (size, size))
+
+                frame[height_offset:height_offset+size, width_offset:width_offset+size] = image
+                cv2.rectangle(frame, (width_offset, height_offset), (width_offset+size, height_offset+size), colour, 1)
 
     draw_stats(frame, masked, unmasked, unknown)
 
@@ -230,7 +237,7 @@ def draw_hit(frame, index, prediction, face, boundary):
     boundary_label = f'{index + 1}: Boundary'
 
     draw_boxes(frame, face, face_colour, face_label, boundary, COLOUR_BLUE, boundary_label)
-    return masked, unmasked
+    return masked, unmasked, face_colour
 
 
 class ApplicationCallback(FrameCallback):
@@ -246,5 +253,6 @@ class ApplicationCallback(FrameCallback):
             match_size=IMAGE_SIZE,
             scale=conf.scale,
             debugging=conf.debugging,
-            asserting=conf.asserting
+            asserting=conf.asserting,
+            experimenting=conf.experimenting
         ))
