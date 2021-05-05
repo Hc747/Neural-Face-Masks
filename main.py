@@ -114,7 +114,8 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
     frame = np.asarray(frame)
 
     # state
-    (frame_height, frame_width) = np.shape(frame)[:2]
+    (frame_height, frame_width) = np.asarray(np.shape(frame)[:2]) - 1
+    # offset by 1 as our image arrays are zero-indexed
     images, face_coordinates, crop_coordinates = [], [], []
     masked, unmasked, unknown = 0, 0, 0
 
@@ -151,7 +152,7 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
 
         face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
         face_location = (face_left, face_top, face_right, face_bottom)
-        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width - 1, frame_height - 1)
+        crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width, frame_height)
 
         if face_inside_crop:
             image = dlib.sub_image(img=frame, rect=dlib.rectangle(*crop_location))
