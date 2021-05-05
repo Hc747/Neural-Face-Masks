@@ -3,7 +3,6 @@ import cv2
 from threading import Thread
 from typing import Optional, Tuple
 from PIL import Image
-from config import debug
 from timing.time_source import TimeSource
 from ui.callback.callback import FrameCallback
 from ui.state import State
@@ -88,7 +87,7 @@ class VideoImageSource(ImageSource):
                     image = self.__callback.invoke(frame)
                 except AssertionError as e:
                     image = None
-                    debug(lambda: f'Assertion failed: {e}')
+                    print(f'Assertion failed: {e}')
         else:
             image = None
         finish = self.__last = self.__time.millis

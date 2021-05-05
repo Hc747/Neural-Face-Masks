@@ -35,10 +35,10 @@ class MaskDetectorProvider:
 
     # TODO: specific return type (mask detector..)
     @staticmethod
-    def get_mask_detector(config):
-        if config.mask_detector == MASK_DETECTOR_ANDREW:
+    def get_mask_detector(detector: str, **kwargs):
+        if detector == MASK_DETECTOR_ANDREW:
             return MaskDetectorProvider.andrew()
-        elif config.mask_detector == MASK_DETECTOR_ASHISH:
+        elif detector == MASK_DETECTOR_ASHISH:
             return MaskDetectorProvider.ashish()
         else:
-            raise ValueError(f'Unknown mask detector implementation: {config.mask_detector}. Must be one of: {ALL_MASK_DETECTORS}')
+            raise ValueError(f'Unknown mask detector implementation: {detector}. Must be one of: {ALL_MASK_DETECTORS}')

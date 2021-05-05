@@ -120,6 +120,10 @@ class ClassificationNetwork(NetworkArchitecture):
         base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)
         base.trainable = False
 
+        # TODO: customise convolutional layers...
+        # TODO: investigate LTSM
+        # TODO: evaluate different configurations...
+
         head = Flatten()(base.output)
         classification = Dense(512, activation='relu')(head)
         classification = Dropout(0.5)(classification)

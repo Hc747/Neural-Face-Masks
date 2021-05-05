@@ -2,30 +2,32 @@ import cv2
 from typing import Optional
 from tkinter import *
 from PIL import Image, ImageTk
+from configuration.configuration import ApplicationConfiguration
+from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, MIN_SCALE, MAX_SCALE
 from detectors.face.detectors import FaceDetectorProvider
 from detectors.mask.detectors import MaskDetectorProvider
 from timing.time_source import TimeSource
-from ui.callback.callback import FrameCallback
+from ui.callback.callback import FrameCallback, LambdaFrameCallback
 from ui.source.image_source import ImageSource, VideoImageSource
 from ui.state import State
 
 
 class GUI:
-    # TODO: resizing
-
     __time = TimeSource()
     __state: State = State.UNINITIALISED
     __root = None
+    __configuration: ApplicationConfiguration
     __callback: FrameCallback
     __source = Optional[ImageSource]
     __delay_ms: int = 10
     __last: int = -1
 
-    def __init__(self, title: str, width: int, height: int, callback: Optional[FrameCallback] = None, port: int = 0):
+    def __init__(self, title: str, width: int, height: int, configuration: ApplicationConfiguration, callback: Optional[FrameCallback] = None, port: int = 0):
         self.__title = title
         self.__width = width
         self.__height = height
-        self.__callback = callback if callback is not None else FrameCallback(lambda frame: Image.fromarray(frame))
+        self.__configuration = configuration
+        self.__callback = callback if callback is not None else LambdaFrameCallback(lambda frame: Image.fromarray(frame))
         self.__port = port
 
     @property
@@ -96,48 +98,72 @@ class GUI:
         root.wm_geometry(f'{root.winfo_screenwidth()}x{root.winfo_screenheight()}')
         root.wm_title(self.__title)
 
-        # controls container
-        controls_container = Frame(master=root)
-        controls_container.pack()
-
         # image container
-        image_container = Frame(master=root)
-        image_container.pack()
-
-        # info container
-        info_container = Frame(master=root)
-        info_container.pack()
+        images = Frame(master=root)
+        images.pack(anchor=W, side=LEFT)
 
         # image component
-        image_canvas = Label(master=image_container)
-        image_canvas.pack()
+        canvas = Label(master=images)
+        canvas.pack()
 
-        # camera resolution
-        resolution_canvas = Label(master=info_container, text=f'Native resolution: {self.width}x{self.height}px')
-        resolution_canvas.pack()
+        # label and control container
+        components = Frame(master=root)
+        components.pack(anchor=W, side=LEFT)
 
-        # gui version info
-        gui_version_canvas = Label(master=info_container, text=f'TK/TCL: {TkVersion}/{TclVersion}')
-        gui_version_canvas.pack()
+        # controls container
+        controls = Frame(master=components)
+        controls.pack(anchor=W)
 
-        # api version info
-        api_version_canvas = Label(master=info_container, text=f'{FaceDetectorProvider.version()}\n{MaskDetectorProvider.version()}')
-        api_version_canvas.pack()
+        # info container
+        info = Frame(master=components)
+        info.pack(anchor=W)
 
-        # fps info
-        fps_info = Label(master=info_container, text='FPS')
-        fps_info.pack()
+        detector = StringVar(master=controls, value=self.__configuration.face_str(), name='detector')
 
-        # toggle button
-        toggle_button = Button(master=controls_container, text='Toggle', command=lambda: self.__source.toggle_raw())
-        toggle_button.pack(side=LEFT)
+        def update_detector():
+            self.__configuration.face = detector.get()
+        # TODO: scale component
+        [control.pack(anchor=W) for control in
+            [
+                # exit button
+                Button(master=controls, text='Exit', command=lambda: self.__destroy()),
+                # debugging
+                Checkbutton(master=controls, text='Debug', command=lambda: self.__configuration.toggle_debugging()),
+                # asserting
+                Checkbutton(master=controls, text='Assert', command=lambda: self.__configuration.toggle_asserting()),
+                # experimenting
+                Checkbutton(master=controls, text='Experiment', command=lambda: self.__configuration.toggle_experimenting()),
+                # toggle button
+                Checkbutton(master=controls, text='Raw', command=lambda: self.__source.toggle_raw()),
+                # SVM face detector
+                Radiobutton(master=controls, text='SVM', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
+                # CNN face detector
+                Radiobutton(master=controls, text='CNN', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
+            ]
+        ]
 
-        # exit button
-        exit_button = Button(master=controls_container, text='Exit', command=lambda: self.__destroy())
-        exit_button.pack(side=RIGHT)
+        # FPS
+        fps = Label(master=info, text='FPS')
+        # TODO: other version information
+        [display.pack(anchor=W) for display in
+            [
+                # FPS
+                fps,
+                # resolution
+                # Label(master=info, text=f'Resolution: {self.width}x{self.height}px'),
+                # face detector
+                # Label(master=info, text=f'{FaceDetectorProvider.version()}'),
+                # mask detector
+                # Label(master=info, text=f'{MaskDetectorProvider.version()}'),
+                # tk version
+                Label(master=info, text=f'TK: {TkVersion}'),
+                # tcl version
+                Label(master=info, text=f'TCL: {TclVersion}')
+            ]
+        ]
 
         # setup the update callback
-        root.after(0, func=lambda: self.__update_all(image_canvas, fps_info))
+        root.after(0, func=lambda: self.__update_all(canvas, fps))
 
     def __setup(self):
         self.__setup_image_source()
