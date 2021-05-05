@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     svm: FaceDetector = FaceDetectorProvider.get_face_detector(FACE_DETECTOR_SVM)
     cnn: FaceDetector = FaceDetectorProvider.get_face_detector(FACE_DETECTOR_CNN, filename=args.face_detector_path)
-    mask: Model = MaskDetectorProvider.get_mask_detector(MASK_DETECTOR_ASHISH)
+    mask: Model = MaskDetectorProvider.get_mask_detector(args.mask_detector)
 
     configuration: ApplicationConfiguration = ApplicationConfiguration(args, svm=svm, cnn=cnn, mask=mask)
     callback: FrameCallback = ApplicationCallback(configuration)
