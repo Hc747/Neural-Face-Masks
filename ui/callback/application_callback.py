@@ -188,26 +188,22 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
             debug(lambda: '---end---')
             debug(lambda: '')
 
-    if len(images) > 0:
-        images = np.asarray(images)
-        predictions = mask.predict(images)
+    hits: int = len(images)
+
+    if hits > 0:
+        images = np.array(np.asarray(images))
+        predictions = mask.predict(images, batch_size=hits)
 
         if debugging:
             debug(lambda: f'Predictions: {predictions}')
 
-        for index, (prediction, face, boundary, image) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images)):
+        for index, (prediction, face, boundary, head) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images)):
             m, u, colour = draw_hit(frame, index, prediction, face, boundary)
             masked += m
             unmasked += u
 
             if experimenting:
-                size: int = 32
-                height_offset: int = 64 + (size * index)
-                width_offset: int = 16
-                image = resize(image, (size, size))
-
-                frame[height_offset:height_offset+size, width_offset:width_offset+size] = image
-                cv2.rectangle(frame, (width_offset, height_offset), (width_offset+size, height_offset+size), colour, 1)
+                draw_floating_head(frame, head, colour, index, items=8, size=64, height_offset=64, width_offset=16)
 
     draw_stats(frame, masked, unmasked, unknown)
 
@@ -217,7 +213,22 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
     return frame
 
 
-def draw_hit(frame, index, prediction, face, boundary):
+def draw_floating_head(frame, head, colour, index: int, items: int, size: int, height_offset: int, width_offset: int):
+    # TODO: padding between images?
+    row: int = int(index / items)
+    column: int = int(index - (row * items))
+
+    top: int = height_offset + (column * size)
+    bottom: int = top + size
+    left: int = width_offset + (row * size)
+    right: int = left + size
+
+    image = resize(head, (size, size))
+    frame[top:bottom, left:right] = image
+    cv2.rectangle(frame, (left, top), (right, bottom), colour, 1)
+
+
+def draw_hit(frame, index: int, prediction, face, boundary):
     prediction, confidence = evaluate_prediction(prediction)
     masked, unmasked = 0, 0
 
