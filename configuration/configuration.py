@@ -16,6 +16,7 @@ class ApplicationConfiguration:
     __debug: bool
     __assert: bool
     __experiment: bool
+    __development: bool
 
     __svm: FaceDetector
     __cnn: FaceDetector
@@ -29,6 +30,7 @@ class ApplicationConfiguration:
         self.__assert = config.enable_assertions
         self.__experiment = config.experimental
         self.__scale = config.scale
+        self.__production = config.production
         self.__svm = svm
         self.__cnn = cnn
         self.__mask = mask
@@ -66,6 +68,17 @@ class ApplicationConfiguration:
 
     def toggle_experimenting(self):
         self.experimenting = not self.experimenting
+
+    @property
+    def production(self) -> bool:
+        return self.__production
+
+    @production.setter
+    def production(self, value: bool):
+        self.__production = value
+
+    def toggle_production(self):
+        self.production = not self.production
 
     @property
     def scale(self) -> int:

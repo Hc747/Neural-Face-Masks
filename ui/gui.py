@@ -111,56 +111,69 @@ class GUI:
         components.pack(anchor=W, side=LEFT)
 
         # controls container
-        controls = Frame(master=components)
-        controls.pack(anchor=W)
+        controls_container = Frame(master=components)
+        controls_container.pack(anchor=W)
 
         # info container
-        info = Frame(master=components)
-        info.pack(anchor=W)
+        info_container = Frame(master=components)
+        info_container.pack(anchor=W)
 
-        detector = StringVar(master=controls, value=self.__configuration.face_str(), name='detector')
+        detector = StringVar(master=controls_container, value=self.__configuration.face_str(), name='detector')
 
         def update_detector():
             self.__configuration.face = detector.get()
-        # TODO: scale component
-        [control.pack(anchor=W) for control in
-            [
-                # exit button
-                Button(master=controls, text='Exit', command=lambda: self.__destroy()),
-                # debugging
-                Checkbutton(master=controls, text='Debug', command=lambda: self.__configuration.toggle_debugging()),
-                # asserting
-                Checkbutton(master=controls, text='Assert', command=lambda: self.__configuration.toggle_asserting()),
-                # experimenting
-                Checkbutton(master=controls, text='Experiment', command=lambda: self.__configuration.toggle_experimenting()),
-                # toggle button
-                Checkbutton(master=controls, text='Raw', command=lambda: self.__source.toggle_raw()),
-                # SVM face detector
-                Radiobutton(master=controls, text='SVM', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
-                # CNN face detector
-                Radiobutton(master=controls, text='CNN', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
-            ]
-        ]
 
         # FPS
-        fps = Label(master=info, text='FPS')
-        # TODO: other version information
-        [display.pack(anchor=W) for display in
-            [
+        fps = Label(master=info_container, text='FPS')
+
+        if self.__configuration.production:
+            controls = [
+                # exit button
+                Button(master=controls_container, text='Exit', command=lambda: self.__destroy()),
+                # toggle button
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
+                # SVM face detector
+                Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
+                # CNN face detector
+                Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
+            ]
+            info = [
                 # FPS
                 fps,
                 # resolution
-                # Label(master=info, text=f'Resolution: {self.width}x{self.height}px'),
-                # face detector
-                # Label(master=info, text=f'{FaceDetectorProvider.version()}'),
-                # mask detector
-                # Label(master=info, text=f'{MaskDetectorProvider.version()}'),
-                # tk version
-                Label(master=info, text=f'TK: {TkVersion}'),
-                # tcl version
-                Label(master=info, text=f'TCL: {TclVersion}')
+                Label(master=info_container, text=f'{self.width}x{self.height}px'),
             ]
-        ]
+        else:
+            controls = [
+                # exit button
+                Button(master=controls_container, text='Exit', command=lambda: self.__destroy()),
+                # debugging
+                Checkbutton(master=controls_container, text='Debug', command=lambda: self.__configuration.toggle_debugging()),
+                # asserting
+                Checkbutton(master=controls_container, text='Assert', command=lambda: self.__configuration.toggle_asserting()),
+                # experimenting
+                Checkbutton(master=controls_container, text='Experiment', command=lambda: self.__configuration.toggle_experimenting()),
+                # toggle button
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
+                # SVM face detector
+                Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
+                # CNN face detector
+                Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
+            ]
+            info = [
+                # FPS
+                fps,
+                # resolution
+                Label(master=info_container, text=f'{self.width}x{self.height}px'),
+                # tk version
+                Label(master=info_container, text=f'TK: {TkVersion}'),
+                # tcl version
+                Label(master=info_container, text=f'TCL: {TclVersion}')
+            ]
+
+
+        [control.pack(anchor=W) for control in controls]
+        [display.pack(anchor=W) for display in info]
 
         # setup the update callback
         root.after(0, func=lambda: self.__update_all(canvas, fps))

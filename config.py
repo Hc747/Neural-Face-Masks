@@ -15,6 +15,7 @@ DEFAULT_FACE_SIZE: int = 224
 DEFAULT_ENABLE_DEBUG: bool = False
 DEFAULT_ENABLE_ASSERTIONS: bool = False
 DEFAULT_EXPERIMENTAL_FEATURES: bool = False
+DEFAULT_DEVELOPMENT: bool = False
 
 
 def __boolean(v: str) -> bool:
@@ -35,6 +36,7 @@ __parser.add_argument('--width', default=DEFAULT_WIDTH, type=int, help='Camera r
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, type=int, help='Camera resolution (height)')
 __parser.add_argument('--scale', default=DEFAULT_SCALE, type=float, help='Frame size scaling (to make processing more computationall efficient)')
 __parser.add_argument('--experimental', default=DEFAULT_EXPERIMENTAL_FEATURES, type=__boolean, help='Enable experimental features')
+__parser.add_argument('--production', default=DEFAULT_DEVELOPMENT, type=__boolean, help='Run the application in production mode')
 
 # publicly exported
 args = __parser.parse_args()

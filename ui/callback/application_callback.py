@@ -101,7 +101,7 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     return le, to, ri, bo
 
 
-def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0, debugging: bool = False, asserting: bool = False, experimenting: bool = False):
+def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0, debugging: bool = False, asserting: bool = False, experimenting: bool = False, production: bool = False):
     # preprocessing
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame, scaled, scale = rescale(frame, scale)
@@ -202,7 +202,7 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
             masked += m
             unmasked += u
 
-            if experimenting:
+            if experimenting or production:
                 draw_floating_head(frame, head, colour, index, items=8, size=64, height_offset=64, width_offset=16)
 
     draw_stats(frame, masked, unmasked, unknown)
@@ -265,5 +265,6 @@ class ApplicationCallback(FrameCallback):
             scale=conf.scale,
             debugging=conf.debugging,
             asserting=conf.asserting,
-            experimenting=conf.experimenting
+            experimenting=conf.experimenting,
+            production=conf.production
         ))
