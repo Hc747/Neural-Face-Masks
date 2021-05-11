@@ -128,8 +128,6 @@ class GUI:
 
         if self.__configuration.production:
             controls = [
-                # exit button
-                Button(master=controls_container, text='Exit', command=lambda: self.__destroy()),
                 # toggle button
                 Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
                 # SVM face detector
@@ -145,8 +143,6 @@ class GUI:
             ]
         else:
             controls = [
-                # exit button
-                Button(master=controls_container, text='Exit', command=lambda: self.__destroy()),
                 # debugging
                 Checkbutton(master=controls_container, text='Debug', command=lambda: self.__configuration.toggle_debugging()),
                 # asserting
@@ -171,6 +167,8 @@ class GUI:
                 Label(master=info_container, text=f'TCL: {TclVersion}')
             ]
 
+        # exit button
+        # info.append(Button(master=info_container, text='Exit', command=lambda: self.__destroy()))
 
         [control.pack(anchor=W) for control in controls]
         [display.pack(anchor=W) for display in info]

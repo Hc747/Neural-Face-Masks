@@ -86,7 +86,7 @@ class VideoImageSource(ImageSource):
                 try:
                     image = self.__callback.invoke(frame)
                 except AssertionError as e:
-                    image = None
+                    image = ImageSource.process_raw(frame)
                     print(f'Assertion failed: {e}')
         else:
             image = None
