@@ -17,7 +17,8 @@ class GUI:
     __configuration: ApplicationConfiguration
     __callback: FrameCallback
     __source = Optional[ImageSource]
-    __delay_ms: int = 10
+    __delay_ms: int = 0
+    __history: int = 30
     __last: int = -1
 
     def __init__(self, title: str, width: int, height: int, configuration: ApplicationConfiguration, callback: Optional[FrameCallback] = None, port: int = 0):
@@ -86,7 +87,7 @@ class GUI:
         root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
 
     def __setup_image_source(self):
-        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time)
+        self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, history=self.__history)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
         source.start()
