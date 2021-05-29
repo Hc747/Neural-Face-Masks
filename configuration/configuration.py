@@ -1,6 +1,6 @@
 import sys
 from tensorflow.python.keras import Model
-from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, ALL_FACE_DETECTORS
+from constants import ALL_FACE_DETECTORS
 from detectors.face.detectors import FaceDetector
 
 
@@ -24,13 +24,15 @@ class ApplicationConfiguration:
     __mask: Model
 
     __scale: int
+    __cache_frames: int
 
     def __init__(self, config, faces, mask):
-        self.__debug = config.debug
-        self.__assert = config.enable_assertions
-        self.__experiment = config.experimental
-        self.__scale = config.scale
-        self.__production = config.production
+        self.debugging = config.debug
+        self.asserting = config.enable_assertions
+        self.experimenting = config.experimental
+        self.scale = config.scale
+        self.cache_frames = config.cache_frames
+        self.production = config.production
         self.__faces = faces
         self.__mask = mask
         self.face = config.face_detector
@@ -86,6 +88,14 @@ class ApplicationConfiguration:
     @scale.setter
     def scale(self, value: int):
         self.__scale = value
+
+    @property
+    def cache_frames(self) -> int:
+        return self.__cache_frames
+
+    @cache_frames.setter
+    def cache_frames(self, value: int):
+        self.__cache_frames = max(value, 1)
 
     @property
     def svm(self) -> FaceDetector:

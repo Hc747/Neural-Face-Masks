@@ -3,17 +3,13 @@ import cv2
 import dlib
 import numpy as np
 from PIL import Image
-from typing import Tuple
-from tensorflow.python.keras import Model
-from configuration.configuration import ApplicationConfiguration, expect, debug
-from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE_SIZE
+from typing import Tuple, Optional, List
+from configuration.configuration import ApplicationConfiguration
+from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE_SIZE, PREDICTION_MASKED, PREDICTION_UNMASKED
 from detectors.face.detectors import FaceDetector
 from ui.callback.callback import FrameCallback
 from ui.processing.image import rescale, translate_scale, resize
 from ui.rendering.rendering import draw_boxes, draw_stats
-
-PREDICTION_MASKED: int = 0
-PREDICTION_UNMASKED: int = 1
 
 
 def evaluate_prediction(probabilities: [float]) -> Tuple[int, float]:
@@ -101,28 +97,112 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     return le, to, ri, bo
 
 
-def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale: float = 1.0, debugging: bool = False, asserting: bool = False, experimenting: bool = False, production: bool = False):
-    # preprocessing
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame, scaled, scale = rescale(frame, scale)
-    frame = np.asarray(frame)
-    scaled.flags.writeable = False  # pass by reference
+def draw_floating_head(frame, head, colour, index: int, items: int, size: int, height_offset: int, width_offset: int):
+    # TODO: padding between images?
+    row: int = int(index / items)
+    column: int = int(index - (row * items))
 
-    # state
-    (frame_height, frame_width) = np.asarray(np.shape(frame)[:2]) - 1
-    # offset by 1 as our image arrays are zero-indexed
-    images, confidences, face_coordinates, crop_coordinates = [], [], [], []
-    masked, unmasked, unknown = 0, 0, 0
+    top: int = height_offset + (column * size)
+    bottom: int = top + size
+    left: int = width_offset + (row * size)
+    right: int = left + size
 
-    detections = face.detect(scaled)
-    for detection in detections:
-        confidence = face.confidence(detection)
+    image = resize(head, (size, size))
+    frame[top:bottom, left:right] = image
+    cv2.rectangle(frame, (left, top), (right, bottom), colour, 1)
+
+
+def display_confidence(confidence):
+    return 'unknown' if confidence is None else f'{confidence * 100.0:.02f}%'
+
+
+UNMAPPED_RESULT = ('Undetermined', COLOUR_WHITE)
+RESULT_MAPPING = {
+    PREDICTION_MASKED: ('Masked', COLOUR_GREEN),
+    PREDICTION_UNMASKED: ('Unmasked', COLOUR_RED)
+}
+
+
+class DetectionResult:
+    def __init__(self, ok: bool, confidence: Optional[float], face, crop, image, width: int, height: int):
+        self.__ok = ok
+        self.__confidence = confidence
+        self.__face = face
+        self.__crop = crop
+        self.__image = image
+        self.__width = width
+        self.__height = height
+
+    @property
+    def ok(self):
+        return self.__ok
+
+    @property
+    def confidence(self):
+        return self.__confidence
+
+    @property
+    def face(self):
+        return self.__face
+
+    @property
+    def box(self):
+        return self.__crop
+
+    @property
+    def image(self):
+        return self.__image
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
+    def draw(self, frame, index, prediction):
+        prediction_status, prediction_confidence = evaluate_prediction(prediction)
+        category, colour = RESULT_MAPPING.get(prediction_status, UNMAPPED_RESULT)
+        idx: int = index + 1
+
+        face_label = f'{idx}: Face - {category} - {display_confidence(prediction_confidence)}'
+        box_label = f'{idx}: Boundary - {display_confidence(self.confidence)}'
+
+        draw_boxes(frame, self.face, colour, face_label, self.box, COLOUR_BLUE, box_label)
+        return prediction_status, colour
+
+
+class ApplicationCallback(FrameCallback):
+    __ticks: int = 0
+    __previous = None
+
+    def __init__(self, configuration: ApplicationConfiguration):
+        self.__configuration = configuration
+
+    @property
+    def ticks(self):
+        return self.__ticks
+
+    @property
+    def cache(self):
+        return self.__configuration.cache_frames
+
+    def preprocess(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # cv2 produces frames as BGR
+        frame, scaled, scale = rescale(frame, scale=self.__configuration.scale)
+        scaled.flags.writeable = False  # pass by reference
+        return np.asarray(frame), scaled, scale
+
+    def extract_detection(self, face: FaceDetector, detection, frame, scaled, scale, match_size, frame_width, frame_height) -> Optional[DetectionResult]:
         box = face.bounding_box(scaled, detection)
-        if box is None:
-            continue
 
-        (face_left, face_top, face_width, face_height) = translate_scale(box, scale)
-        face_right, face_bottom = face_left + face_width, face_top + face_height
+        if box is None:
+            return None
+
+        box_confidence = face.confidence(detection)
+
+        face_left, face_top, face_right, face_bottom, face_width, face_height = translate_scale(box, scale)
 
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
         face_top, face_bottom = bind(face_top, face_bottom, 0, frame_height)
@@ -142,20 +222,6 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
         crop_left, crop_right = bind(crop_left + crop_x_offset, crop_right - crop_x_offset, 0, frame_width)
         crop_top, crop_bottom = bind(crop_top + crop_y_offset, crop_bottom - crop_y_offset, 0, frame_height)
 
-        if asserting:
-            expect(lambda: 0 < match_size < frame_width,
-                   lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_width}')
-            expect(lambda: 0 < match_size < frame_height,
-                   lambda: f'(0 < face < frame) = 0 < {match_size} < {frame_height}')
-            expect(lambda: 0 <= face_left <= face_right <= frame_width,
-                   lambda: f'(0 <= left <= right <= frame) = 0 <= {face_left} <= {face_right} <= {frame_width}')
-            expect(lambda: 0 <= face_top <= face_bottom <= frame_height,
-                   lambda: f'(0 <= top <= bottom <= frame) = 0 <= {face_top} <= {face_bottom} <= {frame_height}')
-            expect(lambda: (crop_right - crop_left) == match_size,
-                   lambda: f'(right - left == mask) = ({crop_right} - {crop_left} == {match_size}) = {crop_right - crop_left} == {match_size}')
-            expect(lambda: (crop_bottom - crop_top) == match_size,
-                   lambda: f'(bottom - top == mask) = ({crop_bottom} - {crop_top} == {match_size}) = {crop_bottom - crop_top} == {match_size}')
-
         face_inside_crop = face_left >= crop_left and face_top >= crop_top and face_right <= crop_right and face_bottom <= crop_bottom
         face_location = (face_left, face_top, face_right, face_bottom)
         crop_location = shift(crop_left, crop_top, crop_right, crop_bottom, match_size - 1, frame_width, frame_height)
@@ -167,115 +233,71 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
 
         (width, height) = np.shape(image)[:2]
 
-        if width == height == match_size:
-            face_coordinates.append(face_location)
-            crop_coordinates.append(crop_location)
-            images.append(image)
-            confidences.append(confidence)
-        else:
-            unknown += 1
-            draw_boxes(frame, face_location, COLOUR_WHITE, 'Unknown', crop_location, COLOUR_BLUE, f'Unprocessable ({width}x{height})')
+        ok = match_size == width == height
 
-        if debugging:
-            debug(lambda: '---start---')
-            debug(lambda: f'face_x_offset: {face_x_offset}, face_y_offset: {face_y_offset}')
-            debug(lambda: f'crop_x_offset: {crop_x_offset}, crop_y_offset: {crop_y_offset}')
-            debug(lambda: f'crop_x_ceil: {crop_x_ceil}, crop_y_ceil: {crop_y_ceil}')
-            debug(lambda: f'frame_size: {(frame_width, frame_height)}, mask_input_size: {match_size}')
-            debug(lambda: f'face_boundary: {face_location}')
-            debug(lambda: f'crop_boundary: {crop_location}')
-            debug(lambda: f'shape: {width}x{height}')
-            debug(lambda: f'face_inside_crop: {face_inside_crop}')
-            debug(lambda: '---face---')
-            debug(lambda: f'[L {pad(face_left)}, R {pad(face_right)}, W {pad(face_width)}]')
-            debug(lambda: f'[T {pad(face_top)}, B {pad(face_bottom)}, H {pad(face_height)}]')
-            debug(lambda: '---mask---')
-            debug(lambda: f'[L {pad(crop_left)}, R {pad(crop_right)}, W {pad(crop_right - crop_left)}]')
-            debug(lambda: f'[T {pad(crop_top)}, B {pad(crop_bottom)}, H {pad(crop_bottom - crop_top)}]')
-            debug(lambda: '---end---')
-            debug(lambda: '')
+        return DetectionResult(ok=ok, confidence=box_confidence, face=face_location, crop=crop_location, image=image, width=width, height=height)
 
-    hits: int = len(images)
+    def detect(self, face: FaceDetector, frame, scaled, scale, match_size, frame_width, frame_height) -> List[DetectionResult]:
+        output: List[DetectionResult] = []
+        detections = face.detect(scaled)
+        for detection in detections:
+            extracted: Optional[DetectionResult] = self.extract_detection(face, detection, frame, scaled, scale, match_size, frame_width, frame_height)
+            if extracted is None:
+                continue
+            output.append(extracted)
+        return output
 
-    if hits > 0:
-        images = np.array(np.asarray(images))
+    def classify(self, mask, detections: List[DetectionResult]):
+        pending = [(index, detection) for (index, detection) in enumerate(detections) if detection.ok]
+        hits, total = len(pending), len(detections)
+        output = [None] * total
+
+        if hits <= 0:
+            return output
+
+        images = np.array(np.asarray([detection.image for (_, detection) in pending]))
         predictions = mask.predict(images, batch_size=hits)
 
-        if debugging:
-            debug(lambda: f'Predictions: {predictions}')
+        for source, (destination, _) in enumerate(pending):
+            prediction = predictions[source]
+            output[destination] = prediction
 
-        for index, (prediction, face, boundary, head, confidence) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images, confidences)):
-            m, u, colour = draw_hit(frame, index, prediction, face, boundary, confidence)
-            masked += m
-            unmasked += u
+        return output
 
-            if experimenting or production:
-                draw_floating_head(frame, head, colour, index, items=8, size=64, height_offset=64, width_offset=16)
+    def render(self, frame, detections, predictions):
+        stats = np.zeros((3, ), dtype=int)
+        # TODO: ensure stats size is consistent with size of possible status return values
+        for index, (detection, prediction) in enumerate(zip(detections, predictions)):
+            status, colour = detection.draw(frame, index, prediction)
+            stats[status] += 1
+            draw_floating_head(frame, detection.image, colour, index, items=8, size=64, height_offset=64, width_offset=16)
 
-    draw_stats(frame, masked, unmasked, unknown)
-
-    if debugging:
-        debug(lambda: f'Masked faces: {masked}, Unmasked faces: {unmasked}, Unknown faces: {unknown}')
-
-    return frame
-
-
-def draw_floating_head(frame, head, colour, index: int, items: int, size: int, height_offset: int, width_offset: int):
-    # TODO: padding between images?
-    row: int = int(index / items)
-    column: int = int(index - (row * items))
-
-    top: int = height_offset + (column * size)
-    bottom: int = top + size
-    left: int = width_offset + (row * size)
-    right: int = left + size
-
-    image = resize(head, (size, size))
-    frame[top:bottom, left:right] = image
-    cv2.rectangle(frame, (left, top), (right, bottom), colour, 1)
-
-
-def conf(confidence):
-    return 'unknown' if confidence is None else f'{confidence * 100.0:.02f}%'
-
-
-def draw_hit(frame, index: int, prediction, face, boundary, box_confidence):
-    prediction, confidence = evaluate_prediction(prediction)
-    masked, unmasked = 0, 0
-
-    if prediction == PREDICTION_MASKED:
-        face_colour = COLOUR_GREEN
-        category = 'Masked'
-        masked = 1
-    elif prediction == PREDICTION_UNMASKED:
-        face_colour = COLOUR_RED
-        category = 'Unmasked'
-        unmasked = 1
-    else:
-        face_colour = COLOUR_WHITE
-        category = 'Undetermined'
-
-    face_label = f'{index + 1}: Face - {category} - {conf(confidence)}'
-    boundary_label = f'{index + 1}: Boundary - {conf(box_confidence)}'
-
-    draw_boxes(frame, face, face_colour, face_label, boundary, COLOUR_BLUE, boundary_label)
-    return masked, unmasked, face_colour
-
-
-class ApplicationCallback(FrameCallback):
-    def __init__(self, configuration: ApplicationConfiguration):
-        self.__configuration = configuration
+        draw_stats(frame, stats)
+        return frame
 
     def invoke(self, frame) -> Image:
-        conf = self.__configuration
-        return Image.fromarray(process_frame(
-            frame=frame,
-            face=conf.face,
-            mask=conf.mask,
-            match_size=IMAGE_SIZE,
-            scale=conf.scale,
-            debugging=conf.debugging,
-            asserting=conf.asserting,
-            experimenting=conf.experimenting,
-            production=conf.production
-        ))
+        # phase 0: attributes
+        face: FaceDetector = self.__configuration.face
+        mask = self.__configuration.mask
+        ticks, cache = self.ticks, self.cache
+
+        # phase 1: pre-processing
+        frame, scaled, scale = self.preprocess(frame)
+        # offset by one as array's are zero-indexed
+        (frame_height, frame_width) = np.asarray(np.shape(frame)[:2]) - 1
+
+        # phase 2: inference (face detection)
+        detections = self.detect(face, frame, scaled, scale, match_size=IMAGE_SIZE, frame_width=frame_width, frame_height=frame_height)
+
+        # phase 3: inference (mask detection)
+        predictions = self.__previous
+        if cache <= 0 or ticks == 0 or predictions is None or len(detections) != len(predictions):
+            predictions = self.__previous = self.classify(mask, detections)
+
+        # phase 4: rendering
+        frame = self.render(frame, detections, predictions)
+
+        # phase 5: post-processing
+        self.__ticks = (ticks + 1) % cache
+
+        return Image.fromarray(frame)

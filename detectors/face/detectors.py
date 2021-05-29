@@ -1,9 +1,7 @@
-import abc
-from typing import Optional
-
-import dlib
 import mediapipe as mp
-from imutils import face_utils
+import abc
+import dlib
+from typing import Optional
 from mediapipe.framework.formats import location_data_pb2
 from mediapipe.python.solutions.drawing_utils import RGB_CHANNELS, _normalized_to_pixel_coordinates
 
@@ -46,7 +44,11 @@ class DLIBFaceDetector(FaceDetector):
         return self.__inference(frame)
 
     def bounding_box(self, frame, detection):
-        return face_utils.rect_to_bb(self.__rectangle(detection))
+        box = self.__rectangle(detection)
+        (left, top) = box.left(), box.top()
+        (right, bottom) = box.right(), box.bottom()
+        (width, height) = right - left, bottom - top
+        return left, top, right, bottom, width, height
 
     def name(self) -> str:
         return self.__name
@@ -87,10 +89,9 @@ class MediaPipeFaceDetector(FaceDetector):
         if maxima is None:
             return None
 
-        (x1, y1) = minima
-        (x2, y2) = maxima
-        (w, h) = x2 - x1, y2 - y1
-        return x1, y1, w, h
+        (left, top), (right, bottom) = minima, maxima
+        (width, height) = right - left, bottom - top
+        return left, top, right, bottom, width, height
 
     def confidence(self, detection) -> Optional[float]:
         if not detection.score:
@@ -121,11 +122,12 @@ class FaceDetectorProvider:
 
     @staticmethod
     def get_face_detector(detector: str, **kwargs) -> FaceDetector:
-        if detector == FACE_DETECTOR_MEDIA_PIPE:
-            return FaceDetectorProvider.media_pipe(**kwargs)
-        elif detector == FACE_DETECTOR_SVM:
-            return FaceDetectorProvider.svm()
-        elif detector == FACE_DETECTOR_CNN:
-            return FaceDetectorProvider.cnn(**kwargs)
-        else:
+        factory = {
+            FACE_DETECTOR_MEDIA_PIPE: FaceDetectorProvider.media_pipe,
+            FACE_DETECTOR_SVM: FaceDetectorProvider.svm,
+            FACE_DETECTOR_CNN: FaceDetectorProvider.cnn
+        }.get(detector, None)
+
+        if factory is None:
             raise ValueError(f'Unknown face detector implementation: {detector}. Must be one of: {ALL_FACE_DETECTORS}')
+        return factory(**kwargs)
