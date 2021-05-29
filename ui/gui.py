@@ -169,11 +169,22 @@ class GUI:
                 Label(master=info_container, text=f'TCL: {TclVersion}')
             ]
 
-        # exit button
-        # info.append(Button(master=info_container, text='Exit', command=lambda: self.__destroy()))
+        def adjust_cache(label, value):
+            self.__configuration.cache_frames += value
+            label.configure(text=f'Refresh: {self.__configuration.cache_frames}')
+
+        cache_container = Frame(master=controls_container)
+        cache_label = Label(master=cache_container, text=f'Refresh: {self.__configuration.cache_frames}')
+        cache_decrement = Button(master=cache_container, text='-', command=lambda: adjust_cache(cache_label, -1))
+        cache_increment = Button(master=cache_container, text='+', command=lambda: adjust_cache(cache_label, 1))
+
+        controls.append(cache_container)
+
+        cache_controls = [cache_label, cache_decrement, cache_increment]
 
         [control.pack(anchor=W) for control in controls]
         [display.pack(anchor=W) for display in info]
+        [cache.pack(anchor=W) for cache in cache_controls]
 
         # setup the update callback
         root.after(0, func=lambda: self.__update_all(canvas, fps))
