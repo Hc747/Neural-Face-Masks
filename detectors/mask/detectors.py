@@ -1,7 +1,7 @@
 import os.path
 import tensorflow as tf
-from keras import Model
 from tensorflow import keras
+from tensorflow.keras import Model
 from constants import MASK_DETECTOR_ANDREW, MASK_DETECTOR_ASHISH, ALL_MASK_DETECTORS
 from network.network_architecture import NetworkArchitecture, LOSS_WEIGHTS, LOSS_FUNCTIONS
 

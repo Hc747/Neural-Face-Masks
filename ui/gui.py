@@ -3,9 +3,7 @@ from typing import Optional
 from tkinter import *
 from PIL import Image, ImageTk
 from configuration.configuration import ApplicationConfiguration
-from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, MIN_SCALE, MAX_SCALE
-from detectors.face.detectors import FaceDetectorProvider
-from detectors.mask.detectors import MaskDetectorProvider
+from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, FACE_DETECTOR_MEDIA_PIPE
 from timing.time_source import TimeSource
 from ui.callback.callback import FrameCallback, LambdaFrameCallback
 from ui.source.image_source import ImageSource, VideoImageSource
@@ -132,6 +130,8 @@ class GUI:
                 Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
                 # SVM face detector
                 Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
+                # MediaPipe face detector
+                Radiobutton(master=controls_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=detector, command=update_detector),
                 # CNN face detector
                 Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
             ]
@@ -153,6 +153,8 @@ class GUI:
                 Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
                 # SVM face detector
                 Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
+                # MediaPipe face detector
+                Radiobutton(master=controls_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=detector, command=update_detector),
                 # CNN face detector
                 Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
             ]

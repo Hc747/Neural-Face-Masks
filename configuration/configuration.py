@@ -25,14 +25,13 @@ class ApplicationConfiguration:
 
     __scale: int
 
-    def __init__(self, config, svm: FaceDetector, cnn: FaceDetector, mask: Model):
+    def __init__(self, config, faces, mask):
         self.__debug = config.debug
         self.__assert = config.enable_assertions
         self.__experiment = config.experimental
         self.__scale = config.scale
         self.__production = config.production
-        self.__svm = svm
-        self.__cnn = cnn
+        self.__faces = faces
         self.__mask = mask
         self.face = config.face_detector
 
@@ -102,20 +101,14 @@ class ApplicationConfiguration:
 
     @face.setter
     def face(self, value: str):
-        if value == FACE_DETECTOR_SVM:
-            self.__face = self.__svm
-        elif value == FACE_DETECTOR_CNN:
-            self.__face = self.__cnn
-        else:
+        face = self.__faces.get(value, None)
+        if face is None:
             raise ValueError(f'Unknown face detector implementation: {value}. Must be one of: {ALL_FACE_DETECTORS}')
+        else:
+            self.__face = face
 
     def face_str(self) -> str:
-        if self.face == self.__svm:
-            return FACE_DETECTOR_SVM
-        elif self.face == self.__cnn:
-            return FACE_DETECTOR_CNN
-        else:
-            return 'Unknown'
+        return self.__face.name()
 
     @property
     def mask(self) -> Model:

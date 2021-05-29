@@ -85,9 +85,9 @@ class VideoImageSource(ImageSource):
             else:
                 try:
                     image = self.__callback.invoke(frame)
-                except AssertionError as e:
+                except Exception as e:
                     image = ImageSource.process_raw(frame)
-                    print(f'Assertion failed: {e}')
+                    print(f'Exception: {e}')
         else:
             image = None
         finish = self.__last = self.__time.millis

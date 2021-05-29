@@ -1,9 +1,9 @@
 import abc
 from abc import ABC
-
 from tensorflow.keras import Model
 from tensorflow.keras.applications import *
 from tensorflow.keras.layers import *
+from tensorflow.keras.initializers import glorot_uniform, Constant
 
 BOUNDARY_NETWORK_NAME: str = 'boundary'
 CLASSIFICATION_NETWORK_NAME: str = 'classification'
@@ -30,6 +30,8 @@ NETWORKS = {
     'inceptionv3': InceptionV3
 }
 
+kernel_init = glorot_uniform()
+bias_init = Constant(value=0.2)
 
 class NetworkArchitecture(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -120,17 +122,82 @@ class ClassificationNetwork(NetworkArchitecture):
         base = self.base(weights='imagenet', include_top=False, input_shape=self.__shape)
         base.trainable = False
 
-        # TODO: customise convolutional layers...
-        # TODO: investigate LTSM
-        # TODO: evaluate different configurations...
+        if self.base == VGG16:
+            x = base.layers[-9].output
+            x = self.inception_module(x,
+                                      filters_1x1=192,
+                                      filters_3x3_reduce=96,
+                                      filters_3x3=208,
+                                      filters_5x5_reduce=16,
+                                      filters_5x5=48,
+                                      filters_pool_proj=64,
+                                      layer='inception-l1')
+            x = MaxPooling2D((2, 2), strides=(2, 2), name='inception_l1_maxpool')(x)
 
-        head = Flatten()(base.output)
-        classification = Dense(512, activation='relu')(head)
-        classification = Dropout(0.5)(classification)
-        classification = Dense(512, activation='relu')(classification)
-        classification = Dropout(0.5)(classification)
-        classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
-        return Model(inputs=base.input, outputs=classification)
+            x = self.inception_module(x,
+                                      filters_1x1=160,
+                                      filters_3x3_reduce=112,
+                                      filters_3x3=224,
+                                      filters_5x5_reduce=24,
+                                      filters_5x5=64,
+                                      filters_pool_proj=64,
+                                      layer='inception-l2')
+            x = GlobalAveragePooling2D(name='inception_l2_avgpool')(x)
+
+            head = Flatten()(x)
+            classification = Dense(1024, activation='relu')(head)
+            classification = Dropout(0.35)(classification)
+            classification = Dense(512, activation='relu')(classification)
+            classification = Dropout(0.5)(classification)
+            classification = Dense(len(self.__classes), activation='softmax')(classification)
+            return Model(inputs=base.input, outputs=classification)
+
+        else:
+
+            head = Flatten()(base.output)
+            classification = Dense(512, activation='relu')(head)
+            classification = Dropout(0.5)(classification)
+            classification = Dense(512, activation='relu')(classification)
+            classification = Dropout(0.5)(classification)
+            classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
+            return Model(inputs=base.input, outputs=classification)
+
+    # Create the Inception module
+    def inception_module(self, x,
+                         filters_1x1,
+                         filters_3x3_reduce,
+                         filters_3x3,
+                         filters_5x5_reduce,
+                         filters_5x5,
+                         filters_pool_proj,
+                         layer,
+                         name=None):
+
+        # 1X1 CONV
+        conv_1x1 = Conv2D(filters_1x1, (1, 1), padding='same', activation='relu', kernel_initializer=kernel_init,
+                          bias_initializer=bias_init, name=f'{layer}-1-conv-1x1-1')(x)
+
+        # 1X1 CONV --> 3x3 CONV
+        conv_3x3 = Conv2D(filters_3x3_reduce, (1, 1), padding='same', activation='relu', kernel_initializer=kernel_init,
+                          bias_initializer=bias_init, name=f'{layer}-2-conv-1x1-1')(x)
+        conv_3x3 = Conv2D(filters_3x3, (3, 3), padding='same', activation='relu', kernel_initializer=kernel_init,
+                          bias_initializer=bias_init, name=f'{layer}-2-conv-3x3-2')(conv_3x3)
+
+        # 1X1 CONV --> 5x5 CONV
+        conv_5x5 = Conv2D(filters_5x5_reduce, (1, 1), padding='same', activation='relu', kernel_initializer=kernel_init,
+                          bias_initializer=bias_init, name=f'{layer}-3-conv-1x1-1')(x)
+        conv_5x5 = Conv2D(filters_5x5, (5, 5), padding='same', activation='relu', kernel_initializer=kernel_init,
+                          bias_initializer=bias_init, name=f'{layer}-3-conv-5x5-2')(conv_5x5)
+
+        # 3X3 MAXPOOL --> 1X1 CONV
+        pool_proj = MaxPooling2D((3, 3), strides=(1, 1), padding='same', name=f'{layer}-4-maxpool-1')(x)
+        pool_proj = Conv2D(filters_pool_proj, (1, 1), padding='same', activation='relu', kernel_initializer=kernel_init,
+                           bias_initializer=bias_init, name=f'{layer}-4-conv-1x1-2')(pool_proj)
+
+        # Concatenate the layers
+        output = concatenate([conv_1x1, conv_3x3, conv_5x5, pool_proj], axis=3, name=name)
+
+        return output
 
 
 class ClassificationRegressionNetwork(NetworkArchitecture):

@@ -16,6 +16,7 @@ DEFAULT_ENABLE_DEBUG: bool = False
 DEFAULT_ENABLE_ASSERTIONS: bool = False
 DEFAULT_EXPERIMENTAL_FEATURES: bool = False
 DEFAULT_DEVELOPMENT: bool = False
+DEFAULT_DUMP_JS: bool = True
 
 
 def __boolean(v: str) -> bool:
@@ -25,6 +26,7 @@ def __boolean(v: str) -> bool:
 # TODO: type safety
 # TODO: mutual exclusion
 __parser = argparse.ArgumentParser()
+__parser.add_argument('--dump_js', default=DEFAULT_DUMP_JS, type=__boolean, help='Dump TFJS model')
 __parser.add_argument('--source', default=DEFAULT_IMAGE_SOURCE, type=str, help='Image source (video)')
 __parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, type=str, help='Face detector (cnn or svm)')
 __parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, type=str, help='Face detector models path')

@@ -106,16 +106,22 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame, scaled, scale = rescale(frame, scale)
     frame = np.asarray(frame)
+    scaled.flags.writeable = False  # pass by reference
 
     # state
     (frame_height, frame_width) = np.asarray(np.shape(frame)[:2]) - 1
     # offset by 1 as our image arrays are zero-indexed
-    images, face_coordinates, crop_coordinates = [], [], []
+    images, confidences, face_coordinates, crop_coordinates = [], [], [], []
     masked, unmasked, unknown = 0, 0, 0
 
     detections = face.detect(scaled)
     for detection in detections:
-        (face_left, face_top, face_width, face_height) = translate_scale(face.bounding_box(detection), scale)
+        confidence = face.confidence(detection)
+        box = face.bounding_box(scaled, detection)
+        if box is None:
+            continue
+
+        (face_left, face_top, face_width, face_height) = translate_scale(box, scale)
         face_right, face_bottom = face_left + face_width, face_top + face_height
 
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
@@ -165,6 +171,7 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
             face_coordinates.append(face_location)
             crop_coordinates.append(crop_location)
             images.append(image)
+            confidences.append(confidence)
         else:
             unknown += 1
             draw_boxes(frame, face_location, COLOUR_WHITE, 'Unknown', crop_location, COLOUR_BLUE, f'Unprocessable ({width}x{height})')
@@ -197,8 +204,8 @@ def process_frame(frame, face: FaceDetector, mask: Model, match_size: int, scale
         if debugging:
             debug(lambda: f'Predictions: {predictions}')
 
-        for index, (prediction, face, boundary, head) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images)):
-            m, u, colour = draw_hit(frame, index, prediction, face, boundary)
+        for index, (prediction, face, boundary, head, confidence) in enumerate(zip(predictions, face_coordinates, crop_coordinates, images, confidences)):
+            m, u, colour = draw_hit(frame, index, prediction, face, boundary, confidence)
             masked += m
             unmasked += u
 
@@ -228,7 +235,11 @@ def draw_floating_head(frame, head, colour, index: int, items: int, size: int, h
     cv2.rectangle(frame, (left, top), (right, bottom), colour, 1)
 
 
-def draw_hit(frame, index: int, prediction, face, boundary):
+def conf(confidence):
+    return 'unknown' if confidence is None else f'{confidence * 100.0:.02f}%'
+
+
+def draw_hit(frame, index: int, prediction, face, boundary, box_confidence):
     prediction, confidence = evaluate_prediction(prediction)
     masked, unmasked = 0, 0
 
@@ -244,8 +255,8 @@ def draw_hit(frame, index: int, prediction, face, boundary):
         face_colour = COLOUR_WHITE
         category = 'Undetermined'
 
-    face_label = f'{index + 1}: {category} - {confidence * 100.0:.02f}%'
-    boundary_label = f'{index + 1}: Boundary'
+    face_label = f'{index + 1}: Face - {category} - {conf(confidence)}'
+    boundary_label = f'{index + 1}: Boundary - {conf(box_confidence)}'
 
     draw_boxes(frame, face, face_colour, face_label, boundary, COLOUR_BLUE, boundary_label)
     return masked, unmasked, face_colour
