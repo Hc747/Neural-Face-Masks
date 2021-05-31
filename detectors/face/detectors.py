@@ -4,11 +4,7 @@ import dlib
 from typing import Optional
 from mediapipe.framework.formats import location_data_pb2
 from mediapipe.python.solutions.drawing_utils import RGB_CHANNELS, _normalized_to_pixel_coordinates
-
 from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, ALL_FACE_DETECTORS, FACE_DETECTOR_MEDIA_PIPE
-
-DEFAULT_UPSCALE: int = 0
-EMPTY = []
 
 
 class FaceDetector(metaclass=abc.ABCMeta):
@@ -63,7 +59,7 @@ class MediaPipeFaceDetector(FaceDetector):
 
     def detect(self, frame):
         result = self.__detector.process(frame)
-        return EMPTY if result.detections is None else result.detections
+        return [] if result.detections is None else result.detections
 
     def bounding_box(self, frame, detection):
         if not detection.location_data:
