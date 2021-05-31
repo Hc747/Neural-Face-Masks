@@ -83,9 +83,8 @@ def draw_floating_head(frame, head, colour, index: int, items: int, size: int, h
     column: int = int(index - (row * items))
 
     top: int = height_offset + (column * size)
-    bottom: int = top + size
     left: int = width_offset + (row * size)
-    right: int = left + size
+    bottom, right = top + size, left + size
 
     image = resize(head, (size, size))
     frame[top:bottom, left:right] = image
@@ -212,10 +211,11 @@ class ApplicationCallback(FrameCallback):
         else:
             image = cv2.resize(dlib.sub_image(img=frame, rect=dlib.rectangle(*face_location)), (match_size, match_size))
 
+        image = np.copy(image)
+        # prevent modifications to the original area of the image from affecting the 'copy'
+
         (width, height) = np.shape(image)[:2]
-
         ok = match_size == width == height
-
         return DetectionResult(ok=ok, confidence=box_confidence, face=face_location, crop=crop_location, image=image, width=width, height=height)
 
     def detect(self, face: FaceDetector, frame, scaled, scale, match_size, frame_width, frame_height) -> List[DetectionResult]:
