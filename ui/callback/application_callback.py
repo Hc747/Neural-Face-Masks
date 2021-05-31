@@ -257,7 +257,7 @@ class ApplicationCallback(FrameCallback):
         return frame
 
     def invoke(self, frame) -> Image:
-        # phase 0: attributes
+        # phase 0: setup attributes
         face: FaceDetector = self.__configuration.face
         mask: MaskDetector = self.__configuration.mask
         # store face and mask detectors locally in case they're updated externally during processing
@@ -277,7 +277,7 @@ class ApplicationCallback(FrameCallback):
             # update the predictions if they've gone stale
             predictions = self.__previous = self.classify(mask, detections)
 
-        # phase 4: rendering
+        # phase 4: render results
         frame = self.render(frame, mask, detections, predictions)
 
         # phase 5: post-processing
