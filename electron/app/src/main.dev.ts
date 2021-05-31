@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 
 const production: boolean = process.env.NODE_ENV === 'production';
 const development: boolean = process.env.NODE_ENV === 'development';
@@ -54,18 +54,19 @@ const start = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  const handle = new BrowserWindow({
+  const browser = new BrowserWindow({
     show: false,
     icon: getAssetPath('icon.png'),
     webPreferences: {
-      nodeIntegration: true,
+        nodeIntegration: true,
+        preload: path.join(__dirname, 'preload.js')
     },
   });
 
-  await handle.loadURL(`file://${__dirname}/index.html`);
+  await browser.loadURL(`file://${__dirname}/index.html`);
 
-  handle.maximize();
-  handle.show();
+  browser.maximize();
+  browser.show();
 };
 
 const activate = async () => {
@@ -82,3 +83,29 @@ const stop = () => app.quit();
 app.whenReady().then(start).catch(error);
 app.on(event_init, activate);
 app.on(event_stop, stop);
+
+// const configuration = {
+//     // backend: 'webgl',
+//     backend: 'humangl',
+//     modelBasePath: '../node_modules/@vladmandic/human/models',
+//     face: {
+//         gesture: { enabled: false },
+//         mesh: { enabled: false },
+//         iris: { enabled: false },
+//         description: { enabled: false },
+//         emotion: { enabled: false }
+//     },
+//     body: { enabled: false },
+//     hand: { enabled: false },
+//     object: { enabled: false }
+// };
+//
+// const human = new Human(configuration);
+//
+// ipcMain.handle('inference', async (event, image) => {
+//     console.log('image', image);
+//     const tensor = human.tf.tensor(image);
+//     const detections = await human.detect(tensor.expandDims(0));
+//     // const tensor = human.tf.tensor
+//     return [detections, 456];
+// });

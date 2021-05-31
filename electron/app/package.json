@@ -15,20 +15,6 @@
     "start:renderer": "cross-env NODE_ENV=development webpack serve --config .erb/configs/webpack.config.renderer.dev.babel.js",
     "test": "jest"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "cross-env NODE_ENV=development eslint --cache"
-    ],
-    "{*.json,.{babelrc,eslintrc,prettierrc}}": [
-      "prettier --ignore-path .eslintignore --parser json --write"
-    ],
-    "*.{css,scss}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ],
-    "*.{html,md,yml}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ]
-  },
   "build": {
     "productName": "ElectronReact",
     "appId": "org.erb.ElectronReact",
@@ -228,7 +214,7 @@
     "jest": "^26.1.0",
     "lint-staged": "^10.2.11",
     "mini-css-extract-plugin": "^1.3.1",
-    "node-sass": "^5.0.0",
+    "node-sass": "^6.0.0",
     "opencollective-postinstall": "^2.0.3",
     "prettier": "^2.0.5",
     "react-refresh": "^0.9.0",
@@ -247,6 +233,10 @@
     "yarn-deduplicate": "^3.1.0"
   },
   "dependencies": {
+    "@tensorflow/tfjs-core": "^3.6.0",
+    "@tensorflow/tfjs-data": "^3.6.0",
+    "@vladmandic/face-api": "^1.2.4",
+    "@vladmandic/human": "^1.9.3",
     "electron-debug": "^3.1.0",
     "electron-log": "^4.2.4",
     "electron-updater": "^4.3.4",
@@ -255,6 +245,7 @@
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
     "regenerator-runtime": "^0.13.5",
+    "set-interval-async": "^2.0.3",
     "source-map-support": "^0.5.19"
   },
   "devEngines": {
