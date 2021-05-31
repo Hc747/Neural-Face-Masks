@@ -26,12 +26,15 @@ if __name__ == '__main__':
             FACE_DETECTOR_SVM: FaceDetectorProvider.get_face_detector(FACE_DETECTOR_SVM)
         }
 
-        mask: MaskDetector = MaskDetectorProvider.get_mask_detector(args.mask_detector)  # TODO: typing
+        masks = {
+            MASK_DETECTOR_CABANI: MaskDetectorProvider.cabani(),
+            MASK_DETECTOR_ASHISH: MaskDetectorProvider.ashish()
+        }
 
         # if args.dump_js:
         #     tfjs.converters.save_keras_model(mask, './electron/app/src/model')
 
-        configuration: ApplicationConfiguration = ApplicationConfiguration(args, faces=faces, mask=mask)
+        configuration: ApplicationConfiguration = ApplicationConfiguration(args, faces=faces, masks=masks)
         callback: FrameCallback = ApplicationCallback(configuration)
 
         gui = GUI(title=args.title, width=args.width, height=args.height, configuration=configuration, callback=callback)

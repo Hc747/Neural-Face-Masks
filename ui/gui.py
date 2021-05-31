@@ -3,7 +3,8 @@ from typing import Optional
 from tkinter import *
 from PIL import Image, ImageTk
 from configuration.configuration import ApplicationConfiguration
-from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, FACE_DETECTOR_MEDIA_PIPE
+from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, FACE_DETECTOR_MEDIA_PIPE, MASK_DETECTOR_CABANI, \
+    MASK_DETECTOR_ASHISH
 from timing.time_source import TimeSource
 from ui.callback.callback import FrameCallback, LambdaFrameCallback
 from ui.source.image_source import ImageSource, VideoImageSource
@@ -117,24 +118,13 @@ class GUI:
         info_container = Frame(master=components)
         info_container.pack(anchor=W)
 
-        detector = StringVar(master=controls_container, value=self.__configuration.face_str(), name='detector')
-
-        def update_detector():
-            self.__configuration.face = detector.get()
-
         # FPS
         fps = Label(master=info_container, text='FPS')
 
         if self.__configuration.production:
             controls = [
                 # toggle button
-                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
-                # SVM face detector
-                Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
-                # MediaPipe face detector
-                Radiobutton(master=controls_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=detector, command=update_detector),
-                # CNN face detector
-                Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw())
             ]
             info = [
                 # FPS
@@ -151,13 +141,7 @@ class GUI:
                 # experimenting
                 Checkbutton(master=controls_container, text='Experiment', command=lambda: self.__configuration.toggle_experimenting()),
                 # toggle button
-                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw()),
-                # SVM face detector
-                Radiobutton(master=controls_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=detector, command=update_detector),
-                # MediaPipe face detector
-                Radiobutton(master=controls_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=detector, command=update_detector),
-                # CNN face detector
-                Radiobutton(master=controls_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=detector, command=update_detector)
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw())
             ]
             info = [
                 # FPS
@@ -170,6 +154,27 @@ class GUI:
                 Label(master=info_container, text=f'TCL: {TclVersion}')
             ]
 
+        def update_face_detector():
+            self.__configuration.face = face_detector.get()
+
+        def update_mask_detector():
+            self.__configuration.mask = mask_detector.get()
+
+        face_detectors_container = Frame(master=controls_container)
+        face_detector = StringVar(master=face_detectors_container, value=self.__configuration.face_str(), name='face_detector')
+
+        face_detectors_label = Label(master=face_detectors_container, text='Face Config')
+        face_svm = Radiobutton(master=face_detectors_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=face_detector, command=update_face_detector)
+        face_media_pipe = Radiobutton(master=face_detectors_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=face_detector, command=update_face_detector)
+        face_cnn = Radiobutton(master=face_detectors_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=face_detector, command=update_face_detector)
+
+        mask_detectors_container = Frame(master=controls_container)
+        mask_detector = StringVar(master=mask_detectors_container, value=self.__configuration.mask_str(), name='mask_detector')
+
+        mask_detectors_label = Label(master=mask_detectors_container, text='Mask Config')
+        mask_5_classes = Radiobutton(master=mask_detectors_container, text='Complex', value=MASK_DETECTOR_CABANI, variable=mask_detector, command=update_mask_detector)
+        mask_2_classes = Radiobutton(master=mask_detectors_container, text='Simple', value=MASK_DETECTOR_ASHISH, variable=mask_detector, command=update_mask_detector)
+
         def adjust_cache(label, value):
             self.__configuration.cache_frames += value
             label.configure(text=f'Refresh: {self.__configuration.cache_frames}')
@@ -179,12 +184,18 @@ class GUI:
         cache_decrement = Button(master=cache_container, text='-', command=lambda: adjust_cache(cache_label, -1))
         cache_increment = Button(master=cache_container, text='+', command=lambda: adjust_cache(cache_label, 1))
 
-        controls.append(cache_container)
+        for container in [face_detectors_container, mask_detectors_container, cache_container]:
+            controls.append(container)
 
+        face_controls = [face_detectors_label, face_svm, face_media_pipe, face_cnn]
+        mask_controls = [mask_detectors_label, mask_5_classes, mask_2_classes]
         cache_controls = [cache_label, cache_decrement, cache_increment]
 
         [control.pack(anchor=W) for control in controls]
         [display.pack(anchor=W) for display in info]
+
+        [face.pack(anchor=W) for face in face_controls]
+        [mask.pack(anchor=W) for mask in mask_controls]
         [cache.pack(anchor=W) for cache in cache_controls]
 
         # setup the update callback

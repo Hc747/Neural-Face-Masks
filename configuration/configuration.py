@@ -1,5 +1,7 @@
 import sys
-from constants import ALL_FACE_DETECTORS
+from typing import List, Dict
+
+from constants import ALL_FACE_DETECTORS, ALL_MASK_DETECTORS
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector
 
@@ -18,15 +20,16 @@ class ApplicationConfiguration:
     __experiment: bool
     __development: bool
 
-    __svm: FaceDetector
-    __cnn: FaceDetector
+    __faces: Dict[str, FaceDetector]
+    __masks: Dict[str, MaskDetector]
+
     __face: FaceDetector
     __mask: MaskDetector
 
     __scale: int
     __cache_frames: int
 
-    def __init__(self, config, faces, mask: MaskDetector):
+    def __init__(self, config, faces: Dict[str, FaceDetector], masks: Dict[str, MaskDetector]):
         self.debugging = config.debug
         self.asserting = config.enable_assertions
         self.experimenting = config.experimental
@@ -34,8 +37,9 @@ class ApplicationConfiguration:
         self.cache_frames = config.cache_frames
         self.production = config.production
         self.__faces = faces
-        self.__mask = mask
+        self.__masks = masks
         self.face = config.face_detector
+        self.mask = config.mask_detector
 
     @property
     def debugging(self) -> bool:
@@ -98,14 +102,6 @@ class ApplicationConfiguration:
         self.__cache_frames = max(value, 1)
 
     @property
-    def svm(self) -> FaceDetector:
-        return self.__svm
-
-    @property
-    def cnn(self) -> FaceDetector:
-        return self.__cnn
-
-    @property
     def face(self) -> FaceDetector:
         return self.__face
 
@@ -114,12 +110,21 @@ class ApplicationConfiguration:
         face = self.__faces.get(value, None)
         if face is None:
             raise ValueError(f'Unknown face detector implementation: {value}. Must be one of: {ALL_FACE_DETECTORS}')
-        else:
-            self.__face = face
+        self.__face = face
 
     def face_str(self) -> str:
-        return self.__face.name()
+        return self.face.name()
 
     @property
     def mask(self) -> MaskDetector:
         return self.__mask
+
+    @mask.setter
+    def mask(self, value: str):
+        mask = self.__masks.get(value, None)
+        if mask is None:
+            raise ValueError(f'Unknown mask detector implementation: {value}. Must be one of: {ALL_MASK_DETECTORS}')
+        self.__mask = mask
+
+    def mask_str(self) -> str:
+        return self.mask.name()

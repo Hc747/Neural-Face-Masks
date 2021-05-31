@@ -43,10 +43,11 @@ class ResultMapping:
 
 
 class MaskDetector(metaclass=abc.ABCMeta):
-    def __init__(self, model: Model, mapping):
+    def __init__(self, model: Model, mapping, name: str):
         self.__model = model
         self.__mapping = mapping
         self.__size = len(mapping) + 1  # account for unknown case
+        self.__name = name
 
     @property
     def model(self) -> Model:
@@ -59,6 +60,9 @@ class MaskDetector(metaclass=abc.ABCMeta):
     @property
     def output_size(self) -> int:
         return self.__size
+
+    def name(self) -> str:
+        return self.__name
 
     def evaluate(self, predictions: [float]) -> ResultMapping:
         values = np.asarray(predictions)
@@ -95,13 +99,13 @@ class MaskDetectorProvider:
     def ashish() -> MaskDetector:
         directory = os.path.join(base, 'ashish', 'classification', 'checkpoint')
         model: Model = MaskDetectorProvider.__model(directory)
-        return MaskDetector(model=model, mapping=ASHISH_MAPPING)
+        return MaskDetector(model=model, mapping=ASHISH_MAPPING, name=MASK_DETECTOR_ASHISH)
 
     @staticmethod
     def cabani() -> MaskDetector:
         directory = os.path.join(base, 'cabani', 'classification', 'checkpoint')
         model: Model = MaskDetectorProvider.__model(directory)
-        return MaskDetector(model=model, mapping=CABANI_MAPPING)
+        return MaskDetector(model=model, mapping=CABANI_MAPPING, name=MASK_DETECTOR_CABANI)
 
     @staticmethod
     def __model(directory: str) -> Model:
