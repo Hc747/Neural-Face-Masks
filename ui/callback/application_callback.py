@@ -260,12 +260,13 @@ class ApplicationCallback(FrameCallback):
         # phase 0: attributes
         face: FaceDetector = self.__configuration.face
         mask: MaskDetector = self.__configuration.mask
+        # store face and mask detectors locally in case they're updated externally during processing
         ticks, cache = self.ticks, self.cache
 
         # phase 1: pre-processing
         frame, scaled, scale = self.preprocess(frame)
-        # offset by one as array's are zero-indexed
         (frame_height, frame_width) = np.asarray(np.shape(frame)[:2]) - 1
+        # offset by one as array's are zero-indexed
 
         # phase 2: inference (face detection)
         detections = self.detect(face, frame, scaled, scale, match_size=IMAGE_SIZE, frame_width=frame_width, frame_height=frame_height)
@@ -273,6 +274,7 @@ class ApplicationCallback(FrameCallback):
         # phase 3: inference (mask detection)
         predictions = self.__previous
         if cache <= 0 or ticks == 0 or predictions is None or len(detections) != len(predictions):
+            # update the predictions if they've gone stale
             predictions = self.__previous = self.classify(mask, detections)
 
         # phase 4: rendering
