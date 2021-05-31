@@ -95,14 +95,22 @@ class ClassificationNetwork(NetworkArchitecture):
 
     def model(self):
         classes = len(self.__classes)
-        base = self.__base(weights='imagenet', include_top=True, input_shape=self.__shape)
+        base = self.__base(weights='imagenet', include_top=False, input_shape=self.__shape)
         base.trainable = self.__trainable
 
-        head = base.layers[-4].output
-        x = layers.Conv2D(classes * 64, kernel_size=1, padding='same', name='Logits')(head)
-        x = layers.Flatten()(x)
-        classification = Dense(classes, activation='softmax')(x)
+        head = Flatten()(base.output)
+        classification = Dense(512, activation='relu')(head)
+        classification = Dropout(0.5)(classification)
+        classification = Dense(512, activation='relu')(classification)
+        classification = Dropout(0.5)(classification)
+        classification = Dense(classes, activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
         return Model(inputs=base.input, outputs=classification)
+
+        # head = base.layers[-4].output
+        # x = layers.Conv2D(classes * 64, kernel_size=1, padding='same', name='Logits')(head)
+        # x = layers.Flatten()(x)
+        # classification = Dense(classes, activation='softmax')(x)
+        # return Model(inputs=base.input, outputs=classification)
 
         # base.layers.pop()
 
@@ -179,13 +187,13 @@ class ClassificationNetwork(NetworkArchitecture):
 #
 #         else:
 #
-#             head = Flatten()(base.output)
-#             classification = Dense(512, activation='relu')(head)
-#             classification = Dropout(0.5)(classification)
-#             classification = Dense(512, activation='relu')(classification)
-#             classification = Dropout(0.5)(classification)
-#             classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
-#             return Model(inputs=base.input, outputs=classification)
+            # head = Flatten()(base.output)
+            # classification = Dense(512, activation='relu')(head)
+            # classification = Dropout(0.5)(classification)
+            # classification = Dense(512, activation='relu')(classification)
+            # classification = Dropout(0.5)(classification)
+            # classification = Dense(len(self.__classes), activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
+            # return Model(inputs=base.input, outputs=classification)
 #
 #     # Create the Inception module
 #     def inception_module(self, x,

@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from constants import *
+from detectors.mask.detectors import MaskDetector
 
 
 def draw_boxes(frame, face_coordinates, face_colour, face_label, boundary_coordinates, boundary_colour, boundary_label):
@@ -16,7 +17,11 @@ def draw_boxes(frame, face_coordinates, face_colour, face_label, boundary_coordi
     cv2.putText(frame, text=boundary_label, org=(boundary_coordinates[0], boundary_coordinates[1] - offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=boundary_colour)
 
 
-def draw_stats(frame, stats):
-    cv2.putText(frame, f'Masked: {stats[PREDICTION_MASKED]}', org=(0, 10), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_GREEN)
-    cv2.putText(frame, f'Unmasked: {stats[PREDICTION_UNMASKED]}', org=(0, 25), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_RED)
-    cv2.putText(frame, f'Unknown: {stats[PREDICTION_UNKNOWN]}', org=(0, 40), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=COLOUR_WHITE)
+def draw_stats(frame, mask: MaskDetector, stats):
+    beginning, increment = 10, 15
+    for (index, mapping) in enumerate(mask.mapping.values()):
+        label = mapping.get('label')
+        colour = mapping.get('colour')
+        count: int = stats.get(label, 0)
+        offset: int = beginning + (index * increment)
+        cv2.putText(frame, f'{label}: {count}', org=(0, offset), fontFace=FONT_FACE, fontScale=FONT_SCALE, color=colour)

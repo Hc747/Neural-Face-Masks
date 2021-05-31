@@ -8,6 +8,7 @@ IMAGE_SHAPE: Tuple[int, int, int] = (IMAGE_SIZE, IMAGE_SIZE, IMAGE_CHANNELS)
 COLOUR_RED: Tuple[int, int, int] = (255, 0, 0)
 COLOUR_GREEN: Tuple[int, int, int] = (0, 255, 0)
 COLOUR_BLUE: Tuple[int, int, int] = (0, 0, 255)
+COLOUR_YELLOW: Tuple[int, int, int] = (238, 210, 2)
 COLOUR_WHITE: Tuple[int, int, int] = (255, 255, 255)
 COLOUR_BLACK: Tuple[int, int, int] = (0, 0, 0)
 

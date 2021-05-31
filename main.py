@@ -4,7 +4,7 @@ from config import args
 from configuration.configuration import ApplicationConfiguration, debug
 from constants import *
 from detectors.face.detectors import FaceDetectorProvider
-from detectors.mask.detectors import MaskDetectorProvider
+from detectors.mask.detectors import MaskDetectorProvider, MaskDetector
 from ui.callback.application_callback import ApplicationCallback
 from ui.callback.callback import FrameCallback
 from ui.gui import GUI
@@ -26,7 +26,7 @@ if __name__ == '__main__':
             FACE_DETECTOR_SVM: FaceDetectorProvider.get_face_detector(FACE_DETECTOR_SVM)
         }
 
-        mask = MaskDetectorProvider.get_mask_detector(args.mask_detector)  # TODO: typing
+        mask: MaskDetector = MaskDetectorProvider.get_mask_detector(args.mask_detector)  # TODO: typing
 
         # if args.dump_js:
         #     tfjs.converters.save_keras_model(mask, './electron/app/src/model')

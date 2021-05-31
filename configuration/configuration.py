@@ -1,7 +1,7 @@
 import sys
-from tensorflow.python.keras import Model
 from constants import ALL_FACE_DETECTORS
 from detectors.face.detectors import FaceDetector
+from detectors.mask.detectors import MaskDetector
 
 
 def debug(message, out=sys.stdout):
@@ -21,12 +21,12 @@ class ApplicationConfiguration:
     __svm: FaceDetector
     __cnn: FaceDetector
     __face: FaceDetector
-    __mask: Model
+    __mask: MaskDetector
 
     __scale: int
     __cache_frames: int
 
-    def __init__(self, config, faces, mask):
+    def __init__(self, config, faces, mask: MaskDetector):
         self.debugging = config.debug
         self.asserting = config.enable_assertions
         self.experimenting = config.experimental
@@ -121,5 +121,5 @@ class ApplicationConfiguration:
         return self.__face.name()
 
     @property
-    def mask(self) -> Model:
+    def mask(self) -> MaskDetector:
         return self.__mask

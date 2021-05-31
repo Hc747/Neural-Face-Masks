@@ -7,30 +7,31 @@ from typing import Tuple, Optional, List
 from configuration.configuration import ApplicationConfiguration
 from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE_SIZE, PREDICTION_MASKED, PREDICTION_UNMASKED
 from detectors.face.detectors import FaceDetector
+from detectors.mask.detectors import MaskDetector, ResultMapping
 from ui.callback.callback import FrameCallback
 from ui.processing.image import rescale, translate_scale, resize
 from ui.rendering.rendering import draw_boxes, draw_stats
 
 
-def evaluate_prediction(probabilities: [float]) -> Tuple[int, float]:
-    """
-    :param probabilities: the prediction scores of each class
-    :return: a tuple containing the class indice and the 'confidence'
-    """
-    values = np.asarray(probabilities)
-    if values.shape[-1] > 1:
-        index = values.argmax(axis=-1)
-        confidence = values[index]
-    else:
-        # TODO: ensure confidence is correct...
-        score: float = values[0] * 100
-        if score > 50.0:
-            index = PREDICTION_UNMASKED
-            confidence = score
-        else:
-            index = PREDICTION_MASKED
-            confidence = 100 - score
-    return index, confidence
+# def evaluate_prediction(probabilities: [float]) -> Tuple[int, float]:
+#     """
+#     :param probabilities: the prediction scores of each class
+#     :return: a tuple containing the class indice and the 'confidence'
+#     """
+#     values = np.asarray(probabilities)
+#     if values.shape[-1] > 1:
+#         index = values.argmax(axis=-1)
+#         confidence = values[index]
+#     else:
+#         # TODO: ensure confidence is correct...
+#         score: float = values[0] * 100
+#         if score > 50.0:
+#             index = PREDICTION_UNMASKED
+#             confidence = score
+#         else:
+#             index = PREDICTION_MASKED
+#             confidence = 100 - score
+#     return index, confidence
 
 
 # TODO: documentation
@@ -113,7 +114,7 @@ def draw_floating_head(frame, head, colour, index: int, items: int, size: int, h
 
 
 def display_confidence(confidence):
-    return 'unknown' if confidence is None else f'{confidence * 100.0:.02f}%'
+    return 'unknown' if confidence is None else f'{confidence:.02f}%'
 
 
 UNMAPPED_RESULT = ('Undetermined', COLOUR_WHITE)
@@ -162,16 +163,15 @@ class DetectionResult:
     def height(self):
         return self.__height
 
-    def draw(self, frame, index, prediction):
-        prediction_status, prediction_confidence = evaluate_prediction(prediction)
-        category, colour = RESULT_MAPPING.get(prediction_status, UNMAPPED_RESULT)
+    def draw(self, frame, mask: MaskDetector, index, prediction) -> ResultMapping:
+        result: ResultMapping = mask.evaluate(prediction)
         idx: int = index + 1
 
-        face_label = f'{idx}: Face - {category} - {display_confidence(prediction_confidence)}'
+        face_label = f'{idx}: Face - {result.label} - {display_confidence(result.confidence)}'
         box_label = f'{idx}: Boundary - {display_confidence(self.confidence)}'
 
-        draw_boxes(frame, self.face, colour, face_label, self.box, COLOUR_BLUE, box_label)
-        return prediction_status, colour
+        draw_boxes(frame, self.face, result.colour, face_label, self.box, COLOUR_BLUE, box_label)
+        return result
 
 
 class ApplicationCallback(FrameCallback):
@@ -249,7 +249,7 @@ class ApplicationCallback(FrameCallback):
             output.append(extracted)
         return output
 
-    def classify(self, mask, detections: List[DetectionResult]):
+    def classify(self, mask: MaskDetector, detections: List[DetectionResult]):
         pending = [(index, detection) for (index, detection) in enumerate(detections) if detection.ok]
         hits, total = len(pending), len(detections)
         output = [None] * total
@@ -258,7 +258,7 @@ class ApplicationCallback(FrameCallback):
             return output
 
         images = np.array(np.asarray([detection.image for (_, detection) in pending]))
-        predictions = mask.predict(images, batch_size=min(hits, MAX_BATCH_SIZE))
+        predictions = mask.model.predict(images, batch_size=min(hits, MAX_BATCH_SIZE))
 
         for source, (destination, _) in enumerate(pending):
             prediction = predictions[source]
@@ -266,21 +266,21 @@ class ApplicationCallback(FrameCallback):
 
         return output
 
-    def render(self, frame, detections, predictions):
-        stats = np.zeros((3, ), dtype=int)
-        # TODO: ensure stats size is consistent with size of possible status return values
+    def render(self, frame, mask: MaskDetector, detections, predictions):
+        stats = {}
         for index, (detection, prediction) in enumerate(zip(detections, predictions)):
-            status, colour = detection.draw(frame, index, prediction)
-            stats[status] += 1
-            draw_floating_head(frame, detection.image, colour, index, items=8, size=64, height_offset=64, width_offset=16)
+            result: ResultMapping = detection.draw(frame, mask, index, prediction)
+            current: int = stats.get(result.label, 0)
+            stats[result.label] = current + 1
+            draw_floating_head(frame, detection.image, result.colour, index, items=8, size=64, height_offset=80, width_offset=16)
 
-        draw_stats(frame, stats)
+        draw_stats(frame, mask, stats)
         return frame
 
     def invoke(self, frame) -> Image:
         # phase 0: attributes
         face: FaceDetector = self.__configuration.face
-        mask = self.__configuration.mask
+        mask: MaskDetector = self.__configuration.mask
         ticks, cache = self.ticks, self.cache
 
         # phase 1: pre-processing
@@ -297,7 +297,7 @@ class ApplicationCallback(FrameCallback):
             predictions = self.__previous = self.classify(mask, detections)
 
         # phase 4: rendering
-        frame = self.render(frame, detections, predictions)
+        frame = self.render(frame, mask, detections, predictions)
 
         # phase 5: post-processing
         self.__ticks = (ticks + 1) % cache
