@@ -26,7 +26,7 @@ class ApplicationConfiguration:
     __face: FaceDetector
     __mask: MaskDetector
 
-    __scale: int
+    __scale: float
     __cache_frames: int
 
     def __init__(self, config, faces: Dict[str, FaceDetector], masks: Dict[str, MaskDetector]):
@@ -86,12 +86,12 @@ class ApplicationConfiguration:
         self.production = not self.production
 
     @property
-    def scale(self) -> int:
+    def scale(self) -> float:
         return self.__scale
 
     @scale.setter
-    def scale(self, value: int):
-        self.__scale = value
+    def scale(self, value: float):
+        self.__scale = max(value, 0.1)
 
     @property
     def cache_frames(self) -> int:

@@ -175,7 +175,7 @@ class GUI:
         mask_5_classes = Radiobutton(master=mask_detectors_container, text='Complex', value=MASK_DETECTOR_CABANI, variable=mask_detector, command=update_mask_detector)
         mask_2_classes = Radiobutton(master=mask_detectors_container, text='Simple', value=MASK_DETECTOR_ASHISH, variable=mask_detector, command=update_mask_detector)
 
-        def adjust_cache(label, value):
+        def adjust_cache(label, value: int):
             self.__configuration.cache_frames += value
             label.configure(text=f'Refresh: {self.__configuration.cache_frames}')
 
@@ -184,19 +184,29 @@ class GUI:
         cache_decrement = Button(master=cache_container, text='-', command=lambda: adjust_cache(cache_label, -1))
         cache_increment = Button(master=cache_container, text='+', command=lambda: adjust_cache(cache_label, 1))
 
-        for container in [face_detectors_container, mask_detectors_container, cache_container]:
+        def adjust_scale(label, value: float):
+            self.__configuration.scale += value
+            label.configure(text=f'Downscale: {self.__configuration.scale:.1f}')
+
+        scale_container = Frame(master=controls_container)
+        scale_label = Label(master=scale_container, text=f'Downscale: {self.__configuration.scale:.1f}')
+        scale_decrement = Button(master=scale_container, text='-', command=lambda: adjust_scale(scale_label, -0.1))
+        scale_increment = Button(master=scale_container, text='+', command=lambda: adjust_scale(scale_label, 0.1))
+
+        for container in [face_detectors_container, mask_detectors_container, cache_container, scale_container]:
             controls.append(container)
 
         face_controls = [face_detectors_label, face_svm, face_media_pipe, face_cnn]
         mask_controls = [mask_detectors_label, mask_5_classes, mask_2_classes]
-        cache_controls = [cache_label, cache_decrement, cache_increment]
+        cache_controls = [cache_label, cache_increment, cache_decrement]
+        scale_controls = [scale_label, scale_increment, scale_decrement]
 
         [control.pack(anchor=W) for control in controls]
         [display.pack(anchor=W) for display in info]
-
         [face.pack(anchor=W) for face in face_controls]
         [mask.pack(anchor=W) for mask in mask_controls]
         [cache.pack(anchor=W) for cache in cache_controls]
+        [scale.pack(anchor=W) for scale in scale_controls]
 
         # setup the update callback
         root.after(0, func=lambda: self.__update_all(canvas, fps))
