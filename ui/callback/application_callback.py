@@ -121,6 +121,7 @@ RESULT_MAPPING = {
     PREDICTION_MASKED: ('Masked', COLOUR_GREEN),
     PREDICTION_UNMASKED: ('Unmasked', COLOUR_RED)
 }
+MAX_BATCH_SIZE: int = 32
 
 
 class DetectionResult:
@@ -191,6 +192,7 @@ class ApplicationCallback(FrameCallback):
     def preprocess(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # cv2 produces frames as BGR
         frame, scaled, scale = rescale(frame, scale=self.__configuration.scale)
+        frame.flags.writeable = True
         scaled.flags.writeable = False  # pass by reference
         return np.asarray(frame), scaled, scale
 
@@ -256,7 +258,7 @@ class ApplicationCallback(FrameCallback):
             return output
 
         images = np.array(np.asarray([detection.image for (_, detection) in pending]))
-        predictions = mask.predict(images, batch_size=hits)
+        predictions = mask.predict(images, batch_size=min(hits, MAX_BATCH_SIZE))
 
         for source, (destination, _) in enumerate(pending):
             prediction = predictions[source]
