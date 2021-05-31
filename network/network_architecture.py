@@ -99,10 +99,10 @@ class ClassificationNetwork(NetworkArchitecture):
         base.trainable = self.__trainable
 
         head = Flatten()(base.output)
-        classification = Dense(512, activation='relu')(head)
-        classification = Dropout(0.5)(classification)
-        classification = Dense(512, activation='relu')(classification)
-        classification = Dropout(0.5)(classification)
+        classification = Dense(1024, activation='relu')(head)
+        classification = Dropout(0.35)(classification)
+        classification = Dense(1024, activation='relu')(classification)
+        classification = Dropout(0.35)(classification)
         classification = Dense(classes, activation='softmax', name=CLASSIFICATION_NETWORK_NAME)(classification)
         return Model(inputs=base.input, outputs=classification)
 

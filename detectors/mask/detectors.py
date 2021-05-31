@@ -80,9 +80,9 @@ ASHISH_MAPPING = {
 CABANI_MAPPING = {
     3: {'label': 'Masked', 'colour': COLOUR_GREEN},
     4: {'label': 'Unmasked', 'colour': COLOUR_RED},
-    0: {'label': 'Masked - Incorrect (chin)', 'colour': COLOUR_YELLOW},
-    1: {'label': 'Masked - Incorrect (mouth)', 'colour': COLOUR_YELLOW},
-    2: {'label': 'Masked - Incorrect (nose)', 'colour': COLOUR_YELLOW}
+    0: {'label': 'Masked - Incorrect (uncovered nose and mouth)', 'colour': COLOUR_YELLOW},
+    1: {'label': 'Masked - Incorrect (uncovered nose)', 'colour': COLOUR_YELLOW},
+    2: {'label': 'Masked - Incorrect (uncovered chin)', 'colour': COLOUR_YELLOW}
 }
 
 
