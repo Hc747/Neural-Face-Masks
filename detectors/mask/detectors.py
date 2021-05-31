@@ -91,12 +91,6 @@ class MaskDetectorProvider:
     def version() -> str:
         return f'Mask detector: TensorFlow - {tf.__version__}, Keras: {keras.__version__}, GPU(s): {tf.config.list_physical_devices("GPU")}'
 
-    # TODO: remove
-    # @staticmethod
-    # def andrew() -> Model:
-    #     directory = os.path.join(base, 'andrew', 'classification', 'checkpoint')
-    #     return MaskDetectorProvider.__model(directory)
-
     @staticmethod
     def ashish() -> MaskDetector:
         directory = os.path.join(base, 'ashish', 'classification', 'checkpoint')
