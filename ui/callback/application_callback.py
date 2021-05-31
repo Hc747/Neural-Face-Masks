@@ -13,27 +13,6 @@ from ui.processing.image import rescale, translate_scale, resize
 from ui.rendering.rendering import draw_boxes, draw_stats
 
 
-# def evaluate_prediction(probabilities: [float]) -> Tuple[int, float]:
-#     """
-#     :param probabilities: the prediction scores of each class
-#     :return: a tuple containing the class indice and the 'confidence'
-#     """
-#     values = np.asarray(probabilities)
-#     if values.shape[-1] > 1:
-#         index = values.argmax(axis=-1)
-#         confidence = values[index]
-#     else:
-#         # TODO: ensure confidence is correct...
-#         score: float = values[0] * 100
-#         if score > 50.0:
-#             index = PREDICTION_UNMASKED
-#             confidence = score
-#         else:
-#             index = PREDICTION_MASKED
-#             confidence = 100 - score
-#     return index, confidence
-
-
 # TODO: documentation
 def bind_lower(value: int, threshold: int) -> Tuple[int, int]:
     adjustment = threshold - value if value < threshold else 0
