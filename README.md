@@ -30,8 +30,8 @@ This tool _does not_ provide interested parties with the ability to correlate fa
 | ![](./docs/examples/7.jpg) | ![](./docs/examples/8.jpg) | ![](./docs/examples/9.jpg) |
 
 ### Libraries
-| [TensorFlow](https://github.com/tensorflow/tensorflow) | [MediaPipe](https://github.com/google/mediapipe) | [Dlib](https://github.com/davisking/dlib) | [OpenCV](https://github.com/opencv/opencv) | [Tkinter](https://docs.python.org/3/library/tkinter.html) |
-| ------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------| -------------------------------------------|-----------------------------------------------------------|
+| [TensorFlow](https://github.com/tensorflow/tensorflow) | [MediaPipe](https://github.com/google/mediapipe) | [Dlib](https://github.com/davisking/dlib) | [OpenCV](https://github.com/opencv/opencv) | [scikit-image](https://scikit-image.org/) | [Pillow](https://python-pillow.org/) | [NumPy](https://numpy.org/) | [Tkinter](https://docs.python.org/3/library/tkinter.html) |
+| ------------------------------------------------------ | ------------------------------------------------ | ----------------------------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------ | --------------------------- | --------------------------------------------------------- |
 
 ### Architecture
 ![CNN Pipeline: Modified VGG16](docs/architecture/architecture.png)
