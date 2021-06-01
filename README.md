@@ -1,8 +1,7 @@
 # 42028
 # Deep Learning and Convolutional Neural Networks
 # Assignment 3
-### Group 19
-### Face the Facts
+### Group 19 - Face the Facts
 
 ## Contributors
 | Name | Email | Github | ID |
