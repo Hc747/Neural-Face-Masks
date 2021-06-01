@@ -83,7 +83,7 @@ class GUI:
         return True
 
     def __update_fps(self, fps) -> bool:
-        fps.configure(text=f'FPS: {self.source.fps:.2f}')
+        fps.configure(text=f'\nFPS: {self.source.fps:.2f}')
         return True
 
     def __update_all(self, image, fps):
@@ -128,7 +128,7 @@ class GUI:
         info_container.pack(anchor=W)
 
         # FPS
-        fps = Label(master=info_container, text='FPS')
+        fps = Label(master=info_container, text='\nFPS')
 
         if self.config.production:
             controls = [
@@ -139,7 +139,7 @@ class GUI:
                 # FPS
                 fps,
                 # resolution
-                Label(master=info_container, text=f'{self.width}x{self.height}px'),
+                Label(master=info_container, text=f'\n{self.width}x{self.height}px'),
             ]
         else:
             controls = [
