@@ -18,7 +18,6 @@ class GUI:
     __configuration: ApplicationConfiguration
     __callback: FrameCallback
     __source = Optional[ImageSource]
-    __delay_ms: int = 0
     __history: int = 30
     __last: int = -1
 
@@ -36,15 +35,23 @@ class GUI:
 
     @property
     def width(self):
-        return int(self.__source.camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+        return int(self.source.camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     @property
     def height(self):
-        return int(self.__source.camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return int(self.source.camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
     def title(self):
         return self.__title
+    
+    @property
+    def config(self):
+        return self.__configuration
+    
+    @property
+    def source(self):
+        return self.__source
 
     def start(self):
         if self.__state != State.UNINITIALISED:
@@ -62,7 +69,7 @@ class GUI:
         self.__state = State.UNINITIALISED
 
     def __update_image(self, canvas) -> bool:
-        image, timestamp = self.__source.image
+        image, timestamp = self.source.image
 
         if image is None or self.__last >= timestamp:
             return False
@@ -76,21 +83,23 @@ class GUI:
         return True
 
     def __update_fps(self, fps) -> bool:
-        fps.configure(text=f'FPS: {self.__source.fps:.2f}')
+        fps.configure(text=f'FPS: {self.source.fps:.2f}')
         return True
 
     def __update_all(self, image, fps):
         root = self.__root
+        updated: bool = self.__update_image(image) & self.__update_fps(fps)
         # bitwise 'and' intentional in order to allow fallthrough evaluation
-        updated = self.__update_image(image) & self.__update_fps(fps)
         if updated:
             root.update()
-        root.after(self.__delay_ms, func=lambda: self.__update_all(image, fps))
+        root.after(0, func=lambda: self.__update_all(image, fps))
 
     def __setup_image_source(self):
         self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, history=self.__history)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
+        source.camera.set(cv2.CAP_PROP_FPS, 60)
+        # request frame width, height and FPS
         source.start()
 
     def __setup_canvas(self):
@@ -121,10 +130,10 @@ class GUI:
         # FPS
         fps = Label(master=info_container, text='FPS')
 
-        if self.__configuration.production:
+        if self.config.production:
             controls = [
                 # toggle button
-                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw())
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.source.toggle_raw())
             ]
             info = [
                 # FPS
@@ -135,13 +144,13 @@ class GUI:
         else:
             controls = [
                 # debugging
-                Checkbutton(master=controls_container, text='Debug', command=lambda: self.__configuration.toggle_debugging()),
+                Checkbutton(master=controls_container, text='Debug', command=lambda: self.config.toggle_debugging()),
                 # asserting
-                Checkbutton(master=controls_container, text='Assert', command=lambda: self.__configuration.toggle_asserting()),
+                Checkbutton(master=controls_container, text='Assert', command=lambda: self.config.toggle_asserting()),
                 # experimenting
-                Checkbutton(master=controls_container, text='Experiment', command=lambda: self.__configuration.toggle_experimenting()),
+                Checkbutton(master=controls_container, text='Experiment', command=lambda: self.config.toggle_experimenting()),
                 # toggle button
-                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.__source.toggle_raw())
+                Checkbutton(master=controls_container, text='Show Raw', command=lambda: self.source.toggle_raw())
             ]
             info = [
                 # FPS
@@ -155,58 +164,72 @@ class GUI:
             ]
 
         def update_face_detector():
-            self.__configuration.face = face_detector.get()
+            self.config.face = face_detector.get()
 
         def update_mask_detector():
-            self.__configuration.mask = mask_detector.get()
+            self.config.mask = mask_detector.get()
 
         face_detectors_container = Frame(master=controls_container)
-        face_detector = StringVar(master=face_detectors_container, value=self.__configuration.face_str(), name='face_detector')
+        face_detector = StringVar(master=face_detectors_container, value=self.config.face_str(), name='face_detector')
 
-        face_detectors_label = Label(master=face_detectors_container, text='Face Config')
+        face_detectors_label = Label(master=face_detectors_container, text='Face Configuration')
         face_svm = Radiobutton(master=face_detectors_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=face_detector, command=update_face_detector)
         face_media_pipe = Radiobutton(master=face_detectors_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=face_detector, command=update_face_detector)
         face_cnn = Radiobutton(master=face_detectors_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=face_detector, command=update_face_detector)
 
         mask_detectors_container = Frame(master=controls_container)
-        mask_detector = StringVar(master=mask_detectors_container, value=self.__configuration.mask_str(), name='mask_detector')
+        mask_detector = StringVar(master=mask_detectors_container, value=self.config.mask_str(), name='mask_detector')
 
-        mask_detectors_label = Label(master=mask_detectors_container, text='Mask Config')
+        mask_detectors_label = Label(master=mask_detectors_container, text='Mask Configuration')
         mask_5_classes = Radiobutton(master=mask_detectors_container, text='Complex', value=MASK_DETECTOR_CABANI, variable=mask_detector, command=update_mask_detector)
         mask_2_classes = Radiobutton(master=mask_detectors_container, text='Simple', value=MASK_DETECTOR_ASHISH, variable=mask_detector, command=update_mask_detector)
 
         def adjust_cache(label, value: int):
-            self.__configuration.cache_frames += value
-            label.configure(text=f'Refresh: {self.__configuration.cache_frames}')
+            self.config.cache_frames += value
+            label.configure(text=f'Refresh Rate: {self.config.cache_frames}')
 
         cache_container = Frame(master=controls_container)
-        cache_label = Label(master=cache_container, text=f'Refresh: {self.__configuration.cache_frames}')
+        cache_label = Label(master=cache_container, text=f'Refresh Rate: {self.config.cache_frames}')
         cache_decrement = Button(master=cache_container, text='-', command=lambda: adjust_cache(cache_label, -1))
         cache_increment = Button(master=cache_container, text='+', command=lambda: adjust_cache(cache_label, 1))
 
+        def adjust_padding(label, value: int):
+            self.config.padding += value
+            label.configure(text=f'Face Padding: {self.config.padding}')
+
+        padding_container = Frame(master=controls_container)
+        padding_label = Label(master=padding_container, text=f'Face Padding: {self.config.padding}')
+        padding_decrement = Button(master=padding_container, text='-', command=lambda: adjust_padding(padding_label, -1))
+        padding_increment = Button(master=padding_container, text='+', command=lambda: adjust_padding(padding_label, 1))
+
         def adjust_scale(label, value: float):
-            self.__configuration.scale += value
-            label.configure(text=f'Downscale: {self.__configuration.scale:.1f}')
+            self.config.scale += value
+            label.configure(text=f'Downscale: {self.config.scale:.1f}')
 
         scale_container = Frame(master=controls_container)
-        scale_label = Label(master=scale_container, text=f'Downscale: {self.__configuration.scale:.1f}')
+        scale_label = Label(master=scale_container, text=f'Downscale: {self.config.scale:.1f}')
         scale_decrement = Button(master=scale_container, text='-', command=lambda: adjust_scale(scale_label, -0.1))
         scale_increment = Button(master=scale_container, text='+', command=lambda: adjust_scale(scale_label, 0.1))
 
-        for container in [face_detectors_container, mask_detectors_container, cache_container, scale_container]:
+        for container in [face_detectors_container, mask_detectors_container, cache_container, padding_container, scale_container]:
             controls.append(container)
 
         face_controls = [face_detectors_label, face_svm, face_media_pipe, face_cnn]
         mask_controls = [mask_detectors_label, mask_5_classes, mask_2_classes]
         cache_controls = [cache_label, cache_increment, cache_decrement]
+        padding_controls = [padding_label, padding_increment, padding_decrement]
         scale_controls = [scale_label, scale_increment, scale_decrement]
 
-        [control.pack(anchor=W) for control in controls]
-        [display.pack(anchor=W) for display in info]
-        [face.pack(anchor=W) for face in face_controls]
-        [mask.pack(anchor=W) for mask in mask_controls]
-        [cache.pack(anchor=W) for cache in cache_controls]
-        [scale.pack(anchor=W) for scale in scale_controls]
+        def pack(elements):
+            [e.pack(anchor=W) for e in elements]
+
+        pack(controls)
+        pack(info)
+        pack(face_controls)
+        pack(mask_controls)
+        pack(cache_controls)
+        pack(padding_controls)
+        pack(scale_controls)
 
         # setup the update callback
         root.after(0, func=lambda: self.__update_all(canvas, fps))
@@ -217,8 +240,8 @@ class GUI:
 
     def __destroy_image_source(self):
         cv2.destroyAllWindows()
-        self.__source.stop()
-        self.source = None
+        self.source.stop()
+        self.__source = None
 
     def __destroy_canvas(self):
         self.__root.destroy()

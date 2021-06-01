@@ -28,12 +28,14 @@ class ApplicationConfiguration:
 
     __scale: float
     __cache_frames: int
+    __padding: int
 
     def __init__(self, config, faces: Dict[str, FaceDetector], masks: Dict[str, MaskDetector]):
         self.debugging = config.debug
         self.asserting = config.enable_assertions
         self.experimenting = config.experimental
         self.scale = config.scale
+        self.padding = config.padding
         self.cache_frames = config.cache_frames
         self.production = config.production
         self.__faces = faces
@@ -92,6 +94,14 @@ class ApplicationConfiguration:
     @scale.setter
     def scale(self, value: float):
         self.__scale = max(value, 0.1)
+
+    @property
+    def padding(self) -> int:
+        return self.__padding
+
+    @padding.setter
+    def padding(self, value: int):
+        self.__padding = max(value, 0)
 
     @property
     def cache_frames(self) -> int:
