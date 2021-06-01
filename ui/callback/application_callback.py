@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from typing import Tuple, Optional, List
 from configuration.configuration import ApplicationConfiguration
-from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE_SIZE, PREDICTION_MASKED, PREDICTION_UNMASKED
+from constants import COLOUR_BLUE, IMAGE_SIZE, MAX_BATCH_SIZE
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector, ResultMapping
 from ui.callback.callback import FrameCallback
@@ -95,12 +95,6 @@ def display_confidence(confidence):
     return 'unknown' if confidence is None else f'{confidence:.02f}%'
 
 
-UNMAPPED_RESULT = ('Undetermined', COLOUR_WHITE)
-RESULT_MAPPING = {
-    PREDICTION_MASKED: ('Masked', COLOUR_GREEN),
-    PREDICTION_UNMASKED: ('Unmasked', COLOUR_RED)
-}
-MAX_BATCH_SIZE: int = 32
 
 
 class DetectionResult:
