@@ -16,6 +16,7 @@ DEFAULT_SCALE: float = 2.6
 DEFAULT_FACE_SIZE: int = 224
 DEFAULT_CACHE_FRAMES: int = 15
 DEFAULT_PADDING: int = 65
+DEFAULT_MEDIA_PIPE_CONFIDENCE: float = 0.5
 DEFAULT_ENABLE_DEBUG: bool = False
 DEFAULT_ENABLE_ASSERTIONS: bool = False
 DEFAULT_EXPERIMENTAL_FEATURES: bool = False
@@ -40,6 +41,7 @@ __parser.add_argument('--width', default=DEFAULT_WIDTH, type=int, help='Camera r
 __parser.add_argument('--height', default=DEFAULT_HEIGHT, type=int, help='Camera resolution (height)')
 __parser.add_argument('--scale', default=DEFAULT_SCALE, type=float, help='Frame size scaling (to make processing more computationally efficient)')
 __parser.add_argument('--padding', default=DEFAULT_PADDING, type=int, help='Face padding (to increase face boundary size)')
+__parser.add_argument('--confidence', default=DEFAULT_MEDIA_PIPE_CONFIDENCE, type=float, help='Confidence value for media pipe face detector')
 __parser.add_argument('--experimental', default=DEFAULT_EXPERIMENTAL_FEATURES, type=__boolean, help='Enable experimental features')
 __parser.add_argument('--production', default=DEFAULT_PRODUCTION, type=__boolean, help='Run the application in production mode')
 
