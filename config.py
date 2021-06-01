@@ -1,10 +1,8 @@
 import argparse
-import os
 from distutils.util import strtobool
 from constants import *
 
 DEFAULT_TITLE: str = 'FTF: Face Mask Analyser'
-DEFAULT_FACE_DETECTOR_PATH: str = os.path.abspath(os.path.join('.', 'models', 'face', 'dlib', 'mmod_human_face_detector.dat'))
 DEFAULT_DETECTOR: str = FACE_DETECTOR_MEDIA_PIPE
 DEFAULT_MASK_DETECTOR: str = MASK_DETECTOR_ASHISH
 DEFAULT_WIDTH: int = 1024
@@ -30,7 +28,6 @@ __parser = argparse.ArgumentParser()
 __parser.add_argument('--cache_frames', default=DEFAULT_CACHE_FRAMES, type=int, help='Frame caching optimisation')
 __parser.add_argument('--dump_js', default=DEFAULT_DUMP_JS, type=__boolean, help='Dump TFJS model')
 __parser.add_argument('--face_detector', default=DEFAULT_DETECTOR, type=str, help='Face detector (CNN, SVM or MediaPipe)')
-__parser.add_argument('--face_detector_path', default=DEFAULT_FACE_DETECTOR_PATH, type=str, help='Face detector models path')
 __parser.add_argument('--mask_detector', default=DEFAULT_MASK_DETECTOR, type=str, help='Mask detector implementation')
 __parser.add_argument('--debug', default=DEFAULT_ENABLE_DEBUG, type=__boolean, help='Print debug statements (True/False)')
 __parser.add_argument('--enable_assertions', type=__boolean, default=DEFAULT_ENABLE_ASSERTIONS, help='Disable assertions at runtime (True/False)')
