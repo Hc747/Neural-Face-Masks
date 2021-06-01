@@ -46,12 +46,12 @@ Two models were developed using the following modified VGG16 CNN architecture.
 ## Getting Started
 ### Install
 ```python
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### Run
 ```shell
-python main.py
+python3 main.py
 ```
 
 ### Screenshots
