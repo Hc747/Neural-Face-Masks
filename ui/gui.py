@@ -172,7 +172,7 @@ class GUI:
         face_detectors_container = Frame(master=controls_container)
         face_detector = StringVar(master=face_detectors_container, value=self.config.face_str(), name='face_detector')
 
-        face_detectors_label = Label(master=face_detectors_container, text='Face Configuration')
+        face_detectors_label = Label(master=face_detectors_container, text='\nFace Configuration')
         face_svm = Radiobutton(master=face_detectors_container, text='Higher FPS', value=FACE_DETECTOR_SVM, variable=face_detector, command=update_face_detector)
         face_media_pipe = Radiobutton(master=face_detectors_container, text='Balanced', value=FACE_DETECTOR_MEDIA_PIPE, variable=face_detector, command=update_face_detector)
         face_cnn = Radiobutton(master=face_detectors_container, text='Higher Accuracy', value=FACE_DETECTOR_CNN, variable=face_detector, command=update_face_detector)
@@ -180,34 +180,34 @@ class GUI:
         mask_detectors_container = Frame(master=controls_container)
         mask_detector = StringVar(master=mask_detectors_container, value=self.config.mask_str(), name='mask_detector')
 
-        mask_detectors_label = Label(master=mask_detectors_container, text='Mask Configuration')
+        mask_detectors_label = Label(master=mask_detectors_container, text='\nMask Configuration')
         mask_5_classes = Radiobutton(master=mask_detectors_container, text='Complex', value=MASK_DETECTOR_CABANI, variable=mask_detector, command=update_mask_detector)
         mask_2_classes = Radiobutton(master=mask_detectors_container, text='Simple', value=MASK_DETECTOR_ASHISH, variable=mask_detector, command=update_mask_detector)
 
         def adjust_cache(label, value: int):
             self.config.cache_frames += value
-            label.configure(text=f'Refresh Rate: {self.config.cache_frames}')
+            label.configure(text=f'\nRefresh Rate: {self.config.cache_frames}')
 
         cache_container = Frame(master=controls_container)
-        cache_label = Label(master=cache_container, text=f'Refresh Rate: {self.config.cache_frames}')
+        cache_label = Label(master=cache_container, text=f'\nRefresh Rate: {self.config.cache_frames}')
         cache_decrement = Button(master=cache_container, text='-', command=lambda: adjust_cache(cache_label, -1))
         cache_increment = Button(master=cache_container, text='+', command=lambda: adjust_cache(cache_label, 1))
 
         def adjust_padding(label, value: int):
             self.config.padding += value
-            label.configure(text=f'Face Padding: {self.config.padding}')
+            label.configure(text=f'\nFace Padding: {self.config.padding}')
 
         padding_container = Frame(master=controls_container)
-        padding_label = Label(master=padding_container, text=f'Face Padding: {self.config.padding}')
+        padding_label = Label(master=padding_container, text=f'\nFace Padding: {self.config.padding}')
         padding_decrement = Button(master=padding_container, text='-', command=lambda: adjust_padding(padding_label, -1))
         padding_increment = Button(master=padding_container, text='+', command=lambda: adjust_padding(padding_label, 1))
 
         def adjust_scale(label, value: float):
             self.config.scale += value
-            label.configure(text=f'Downscale: {self.config.scale:.1f}')
+            label.configure(text=f'\nDownscale: {self.config.scale:.1f}')
 
         scale_container = Frame(master=controls_container)
-        scale_label = Label(master=scale_container, text=f'Downscale: {self.config.scale:.1f}')
+        scale_label = Label(master=scale_container, text=f'\nDownscale: {self.config.scale:.1f}')
         scale_decrement = Button(master=scale_container, text='-', command=lambda: adjust_scale(scale_label, -0.1))
         scale_increment = Button(master=scale_container, text='+', command=lambda: adjust_scale(scale_label, 0.1))
 
