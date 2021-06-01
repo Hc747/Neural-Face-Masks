@@ -3,12 +3,11 @@
 # Assignment 3
 ### Group 19
 ### Face the Facts
-## Table of Contents
 ## Contributors
-| name | email | github | id |
+| Name | Email | Github | ID |
 | ---- | ----- | ------ | ---------- |
 | Harrison Cole | [email](mailto:harrisoncole05@gmail.com) | [Hc747](https://github.com/Hc747) | 12962712 |
-| Jihee Lee | [email](mailto:13826920@student.uts.edu.au) | [GRORY](https://github.com/GRORY) | 13826920 |
+| Jihee Lee | [email](mailto:ruaglzzz@gmail.com) | [GRORY](https://github.com/GRORY) | 13826920 |
 | Jose Meza | [email](mailto:josemezag@gmail.com) | [jose-meza-garcia](https://github.com/jose-meza-garcia) | 13093099 |
 ## About
 The wearing of face masks in public spaces has become a normal, if not mandatory, aspect of daily life in most countries around the world.
