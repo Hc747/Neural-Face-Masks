@@ -9,7 +9,7 @@ from constants import COLOUR_WHITE, COLOUR_BLUE, COLOUR_GREEN, COLOUR_RED, IMAGE
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector, ResultMapping
 from ui.callback.callback import FrameCallback
-from ui.processing.image import rescale, translate_scale, resize
+from ui.processing.image import rescale, translate_scale, resize, adjust_bounding_box
 from ui.rendering.rendering import draw_boxes, draw_stats
 
 
@@ -154,7 +154,7 @@ class DetectionResult:
 
 class ApplicationCallback(FrameCallback):
     __ticks: int = 0
-    __previous = None
+    __previous = (None, None)
 
     def __init__(self, configuration: ApplicationConfiguration):
         self.__configuration = configuration
@@ -167,6 +167,22 @@ class ApplicationCallback(FrameCallback):
     def cache(self):
         return self.__configuration.cache_frames
 
+    @property
+    def padding(self):
+        return self.__configuration.padding
+
+    @property
+    def previous(self):
+        return self.__previous
+
+    @property
+    def face(self) -> FaceDetector:
+        return self.__configuration.face
+
+    @property
+    def mask(self) -> MaskDetector:
+        return self.__configuration.mask
+
     def preprocess(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # cv2 produces frames as BGR
         frame, scaled, scale = rescale(frame, scale=self.__configuration.scale)
@@ -174,7 +190,7 @@ class ApplicationCallback(FrameCallback):
         scaled.flags.writeable = False  # pass by reference
         return np.asarray(frame), scaled, scale
 
-    def extract_detection(self, face: FaceDetector, detection, frame, scaled, scale, match_size, frame_width, frame_height) -> Optional[DetectionResult]:
+    def extract_detection(self, face: FaceDetector, detection, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> Optional[DetectionResult]:
         box = face.bounding_box(scaled, detection)
 
         if box is None:
@@ -183,6 +199,9 @@ class ApplicationCallback(FrameCallback):
         box_confidence = face.confidence(detection)
 
         face_left, face_top, face_right, face_bottom, face_width, face_height = translate_scale(box, scale)
+
+        if padding > 0:
+            face_left, face_top, face_right, face_bottom, face_width, face_height = adjust_bounding_box(face_left, face_top, face_right, face_bottom, padding)
 
         face_left, face_right = bind(face_left, face_right, 0, frame_width)
         face_top, face_bottom = bind(face_top, face_bottom, 0, frame_height)
@@ -218,11 +237,11 @@ class ApplicationCallback(FrameCallback):
         ok = match_size == width == height
         return DetectionResult(ok=ok, confidence=box_confidence, face=face_location, crop=crop_location, image=image, width=width, height=height)
 
-    def detect(self, face: FaceDetector, frame, scaled, scale, match_size, frame_width, frame_height) -> List[DetectionResult]:
+    def detect(self, face: FaceDetector, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> List[DetectionResult]:
         output: List[DetectionResult] = []
         detections = face.detect(scaled)
         for detection in detections:
-            extracted: Optional[DetectionResult] = self.extract_detection(face, detection, frame, scaled, scale, match_size, frame_width, frame_height)
+            extracted: Optional[DetectionResult] = self.extract_detection(face, detection, frame, scaled, scale, padding, match_size, frame_width, frame_height)
             if extracted is None:
                 continue
             output.append(extracted)
@@ -258,10 +277,10 @@ class ApplicationCallback(FrameCallback):
 
     def invoke(self, frame) -> Image:
         # phase 0: setup attributes
-        face: FaceDetector = self.__configuration.face
-        mask: MaskDetector = self.__configuration.mask
+        face: FaceDetector = self.face
+        mask: MaskDetector = self.mask
         # store face and mask detectors locally in case they're updated externally during processing
-        ticks, cache = self.ticks, self.cache
+        ticks, cache, padding = self.ticks, self.cache, self.padding
 
         # phase 1: pre-processing
         frame, scaled, scale = self.preprocess(frame)
@@ -269,13 +288,16 @@ class ApplicationCallback(FrameCallback):
         # offset by one as array's are zero-indexed
 
         # phase 2: inference (face detection)
-        detections = self.detect(face, frame, scaled, scale, match_size=IMAGE_SIZE, frame_width=frame_width, frame_height=frame_height)
+        detections = self.detect(face, frame, scaled, scale, padding, match_size=IMAGE_SIZE, frame_width=frame_width, frame_height=frame_height)
 
         # phase 3: inference (mask detection)
-        predictions = self.__previous
-        if cache <= 0 or ticks == 0 or predictions is None or len(detections) != len(predictions):
-            # update the predictions if they've gone stale
-            predictions = self.__previous = self.classify(mask, detections)
+        detector, predictions = self.previous
+        # retrieve cached predictions
+        update_predictions: bool = (cache <= 0) or (ticks <= 0) or (detector is None or predictions is None) or (detector != mask) or (len(detections) != len(predictions))
+        if update_predictions:
+            # update cached predictions if they've gone stale
+            predictions = self.classify(mask, detections)
+            self.__previous = (mask, predictions)
 
         # phase 4: render results
         frame = self.render(frame, mask, detections, predictions)

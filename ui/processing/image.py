@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 
 
 def centered_crop(img, size, interpolation=cv2.INTER_AREA):
@@ -28,3 +28,10 @@ def rescale(frame, scale: Optional[float], interpolation=cv2.INTER_AREA):
 
 def translate_scale(x, scale: float):
     return (np.asarray(x) * scale).astype(int)
+
+
+def adjust_bounding_box(left: int, top: int, right: int, bottom: int, offset: int) -> Tuple[int, int, int, int, int, int]:
+    left, top = left - offset, top - offset
+    right, bottom = right + offset, bottom + offset
+    width, height = right - left, bottom - top
+    return left, top, right, bottom, width, height
