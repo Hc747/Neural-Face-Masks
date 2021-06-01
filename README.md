@@ -20,10 +20,10 @@ This application is an example of a tool that could be deployed in public spaces
 This tool _does not_ provide interested parties with the ability to correlate faces with identities.
 
 ### Dataset
-Images were sourced from the following datasets.
+Images were sourced from the following datasets. Each image was resized to 224x224 and converted to JPEG format.
 
-| [Cabani](https://github.com/cabani/MaskedFace-Net) | [Ashish](https://www.kaggle.com/ashishjangra27/face-mask-12k-images-dataset) | [Flickr](https://github.com/NVlabs/ffhq-dataset) |
-| -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------ |
+| [Cabani](https://github.com/cabani/MaskedFace-Net) | [Ashish](https://www.kaggle.com/ashishjangra27/face-mask-12k-images-dataset) | [Flickr](https://github.com/NVlabs/ffhq-dataset) | [Ours](https://drive.google.com/file/d/12bTpo7NAdT7dIIPG2P8Atw3c10HtYzfa/view?usp=sharing) |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 
 | classes | masked | unmasked | uncovered_nose_and_mouth | uncovered_nose | uncovered_chin |
 | ------- | :----: | :------: | :----------------------: | :------------: | :------------: |
