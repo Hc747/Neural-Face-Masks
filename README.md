@@ -20,9 +20,15 @@ Our project delivers a tool that is capable of locating faces within images and 
 This application is an example of a tool that could be deployed in public spaces (i.e., shopping centres, airports, public transport) in order to provide interested parties with analytical and/or monitoring capabilities.
 This tool _does not_ provide interested parties with the ability to correlate faces with identities.
 
-### Datasets
+### Dataset
+Images were sourced from the following datasets.
+
 | [Cabani](https://github.com/cabani/MaskedFace-Net) | [Ashish](https://www.kaggle.com/ashishjangra27/face-mask-12k-images-dataset) | [Flickr](https://github.com/NVlabs/ffhq-dataset) |
 | -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------ |
+
+| classes | masked | unmasked | uncovered_nose_and_mouth | uncovered_nose | uncovered_chin |
+| ------- | :----: | :------: | :----------------------: | :------------: | :------------: |
+| **samples** | 9,688 | 9,688 | 4,834 | 4,834 | 4,834 |
 
 | ![](./docs/examples/1.jpg) | ![](./docs/examples/2.jpg) | ![](./docs/examples/3.jpg) |
 | ---------------------------| ---------------------------| ---------------------------|
@@ -34,6 +40,8 @@ This tool _does not_ provide interested parties with the ability to correlate fa
 | ------------------------------------------------------ | ------------------------------------------------ | ----------------------------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------ | --------------------------- | --------------------------------------------------------- |
 
 ### Architecture
+Two models were developed using the following modified VGG16 CNN architecture.
+
 ![CNN Pipeline: Modified VGG16](docs/architecture/architecture.png)
 
 ## Getting Started
