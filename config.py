@@ -2,6 +2,11 @@ import argparse
 from distutils.util import strtobool
 from constants import *
 
+"""
+Provides the runtime settings for the application.
+"""
+
+# The default runtime setting values.
 DEFAULT_TITLE: str = 'FTF: Face Mask Analyser'
 DEFAULT_DETECTOR: str = FACE_DETECTOR_MEDIA_PIPE
 DEFAULT_MASK_DETECTOR: str = MASK_DETECTOR_ASHISH
@@ -18,6 +23,9 @@ DEFAULT_PRODUCTION: bool = True
 
 
 def __boolean(v: str) -> bool:
+    """
+    A special type that'll parse true/false, yes/no, 1/0 as boolean values.
+    """
     return bool(strtobool(v))
 
 
@@ -35,5 +43,5 @@ __parser.add_argument('--padding', default=DEFAULT_PADDING, type=int, help='Face
 __parser.add_argument('--experimental', default=DEFAULT_EXPERIMENTAL_FEATURES, type=__boolean, help='Enable experimental features')
 __parser.add_argument('--production', default=DEFAULT_PRODUCTION, type=__boolean, help='Run the application in production mode')
 
-# publicly exported
+# publicly exported runtime settings
 args = __parser.parse_args()
