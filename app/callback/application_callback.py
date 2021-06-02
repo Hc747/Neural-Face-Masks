@@ -9,8 +9,8 @@ from constants import COLOUR_BLUE, IMAGE_SIZE, MAX_BATCH_SIZE
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector, MaskDetectionResult
 from app.callback.callback import FrameCallback
-from app.processing.image import rescale, translate_scale, resize, adjust_bounding_box
-from app.rendering.rendering import draw_boxes, draw_stats
+from app.processing.image import rescale, translate_scale, adjust_bounding_box
+from app.rendering.rendering import draw_boxes, draw_stats, display_confidence, draw_floating_head
 
 
 # TODO: documentation
@@ -75,26 +75,6 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     to, bo = bind(top + t, bottom + b, 0, frame_height)
 
     return le, to, ri, bo
-
-
-def draw_floating_head(frame, head, colour, index: int, items: int, size: int, height_offset: int, width_offset: int):
-    # TODO: padding between images?
-    row: int = int(index / items)
-    column: int = int(index - (row * items))
-
-    top: int = height_offset + (column * size)
-    left: int = width_offset + (row * size)
-    bottom, right = top + size, left + size
-
-    image = resize(head, (size, size))
-    frame[top:bottom, left:right] = image
-    cv2.rectangle(frame, (left, top), (right, bottom), colour, 1)
-
-
-def display_confidence(confidence):
-    return 'unknown' if confidence is None else f'{confidence:.02f}%'
-
-
 
 
 class DetectionResult:

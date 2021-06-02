@@ -5,7 +5,7 @@ A module exporting valid states for various components of the application to be 
 """
 
 
-class State(Enum.int):
+class State(Enum):
     """
     The different state representations that a component may be in.
     """
