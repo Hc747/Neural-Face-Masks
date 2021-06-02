@@ -1,4 +1,4 @@
-# 42028
+# University of Technology Sydney - 42028
 # Deep Learning and Convolutional Neural Networks
 # Assignment 3
 ### Group 19 - Face the Facts
