@@ -10,9 +10,17 @@ from app.callback.callback import FrameCallback, LambdaFrameCallback
 from app.source.image_source import ImageSource, VideoImageSource
 from app.state import State
 
+"""
+A module exporting the Graphical User Interface (GUI) of this application.
+"""
+
 
 class GUI:
-    __time = TimeSource()
+    """
+    An object that configures and holds the state of the graphical user interface.
+    """
+
+    __time: TimeSource = TimeSource()
     __state: State = State.UNINITIALISED
     __root = None
     __configuration: ApplicationConfiguration
@@ -30,30 +38,33 @@ class GUI:
         self.__port = port
 
     @property
-    def time(self):
+    def time(self) -> TimeSource:
         return self.__time
 
     @property
-    def width(self):
+    def width(self) -> int:
         return int(self.source.camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     @property
-    def height(self):
+    def height(self) -> int:
         return int(self.source.camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
-    def title(self):
+    def title(self) -> str:
         return self.__title
     
     @property
-    def config(self):
+    def config(self) -> ApplicationConfiguration:
         return self.__configuration
     
     @property
-    def source(self):
+    def source(self) -> ImageSource:
         return self.__source
 
     def start(self):
+        """
+        Initialises runs the UI components.
+        """
         if self.__state != State.UNINITIALISED:
             return
         self.__state = State.INTERMEDIATE
@@ -62,6 +73,9 @@ class GUI:
         self.__root.mainloop()
 
     def stop(self):
+        """
+        De-initialises and stops the UI components.
+        """
         if self.__state != State.RUNNING:
             return
         self.__state = State.INTERMEDIATE
@@ -69,6 +83,9 @@ class GUI:
         self.__state = State.UNINITIALISED
 
     def __update_image(self, canvas) -> bool:
+        """
+        Updates the canvas with the latest with the latest image from the ImageSource.
+        """
         image, timestamp = self.source.image
 
         if image is None or self.__last >= timestamp:
@@ -82,11 +99,17 @@ class GUI:
         canvas.cached = photo  # avoid garbage collection
         return True
 
-    def __update_fps(self, fps) -> bool:
-        fps.configure(text=f'\nFPS: {self.source.fps:.2f}')
+    def __update_fps(self, label) -> bool:
+        """
+        Updates the FPS label with the frames per second from the ImageSource.
+        """
+        label.configure(text=f'\nFPS: {self.source.fps:.2f}')
         return True
 
     def __update_all(self, image, fps):
+        """
+        Updates and re-renders all components of the UI as necessary.
+        """
         root = self.__root
         updated: bool = self.__update_image(image) & self.__update_fps(fps)
         # bitwise 'and' intentional in order to allow fallthrough evaluation
@@ -95,6 +118,9 @@ class GUI:
         root.after(0, func=lambda: self.__update_all(image, fps))
 
     def __setup_image_source(self):
+        """
+        Configures the ImageSource of the application.
+        """
         self.__source = source = VideoImageSource(cv2.VideoCapture(self.__port), self.__callback, self.time, history=self.__history)
         source.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.__width)
         source.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.__height)
@@ -103,6 +129,9 @@ class GUI:
         source.start()
 
     def __setup_canvas(self):
+        """
+        Configures the UI components of the application.
+        """
         self.__root = root = Tk()
         root.wm_geometry(f'{root.winfo_screenwidth()}x{root.winfo_screenheight()}')
         root.wm_title(self.__title)
@@ -235,18 +264,30 @@ class GUI:
         root.after(0, func=lambda: self.__update_all(canvas, fps))
 
     def __setup(self):
+        """
+        Initialises all components of the application.
+        """
         self.__setup_image_source()
         self.__setup_canvas()
 
     def __destroy_image_source(self):
+        """
+        Cleans up resources associated with the ImageSource.
+        """
         cv2.destroyAllWindows()
         self.source.stop()
         self.__source = None
 
     def __destroy_canvas(self):
+        """
+        Cleans up resources associated with the UI components.
+        """
         self.__root.destroy()
         self.__root = None
 
     def __destroy(self):
+        """
+        De-initialises all components of the application.
+        """
         self.__destroy_image_source()
         self.__destroy_canvas()
