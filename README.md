@@ -45,6 +45,9 @@ Two models were developed using the following modified VGG16 CNN architecture.
 
 ## Getting Started
 ### Install
+1. Clone the repository.
+2. Download the [models](https://drive.google.com/file/d/17PCKmRwjFDQtqkdc4l1r4Dg1rzNvW-87/view?usp=sharing) and unzip them in the same directory as the code.
+3. Install the required libraries.
 ```python
 pip3 install -r requirements.txt
 ```
