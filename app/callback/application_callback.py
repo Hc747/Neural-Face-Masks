@@ -12,36 +12,47 @@ from app.callback.callback import FrameCallback
 from app.processing.image import rescale, translate_scale, adjust_bounding_box
 from app.rendering.rendering import draw_boxes, draw_stats, display_confidence, draw_floating_head
 
+"""
+A module exporting the core functionality of this tool (face and mask detection, as well as rendering logic).
+"""
 
-# TODO: documentation
+
 def bind_lower(value: int, threshold: int) -> Tuple[int, int]:
+    """
+    Utility function that indicates how much smaller a given value is than a threshold value.
+    """
     adjustment = threshold - value if value < threshold else 0
     return value, adjustment
 
 
-# TODO: documentation
 def bind_upper(value: int, threshold: int) -> Tuple[int, int]:
+    """
+    Utility function that indicates how much larger a given value is than a threshold value.
+    """
     adjustment = -(value - threshold) if value > threshold else 0
     return value, adjustment
 
 
-# TODO: documentation
 def bind(v0: int, v1: int, lower: int, upper: int) -> Tuple[int, int]:
+    """
+    Utility function that confines values to an upper and lower bound and rolls over any overflow.
+    """
     v0, lo = bind_lower(v0, lower)
     v1, hi = bind_upper(v1, upper)
     return v0 + hi, v1 + lo
 
 
-# TODO: documentation
-def pad(value: int, size: int = 3) -> str:
-    return f'{value}'.ljust(size)
-
-
 def delta(v: int) -> int:
+    """
+    Utility function that returns the absolute value of an integer divided by two, rounded down.
+    """
     return int(-v // 2 if v < 0 else v // 2 if v > 0 else 0)
 
 
 def delta_ceil(v: int) -> int:
+    """
+    Utility function that returns the absolute value of an integer divided by two, rounded up.
+    """
     return int(math.ceil(-v / 2 if v < 0 else v / 2 if v > 0 else 0))
 
 
@@ -49,10 +60,14 @@ def adjust(target: int, value: int, x: int, y: int, lower: int, upper: int) -> T
     d: float = (target - value) / 2
     dx: int = int(math.ceil(d))
     dy: int = int(math.floor(d))
-    return max(lower, x + (-1 * dx)), min(upper, y + dy)
+    return max(lower, x - dx), min(upper, y + dy)
 
 
 def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width: int, frame_height: int):
+    """
+    Utility function used to ensure the coordinates of a bounding box produce a square of the target size within
+    the confines of the frame width and height.
+    """
     l, t, r, b = 0, 0, 0, 0
 
     def w() -> int:
@@ -77,7 +92,11 @@ def shift(left: int, top: int, right: int, bottom: int, target: int, frame_width
     return le, to, ri, bo
 
 
-class DetectionResult:
+class FaceDetectionResult:
+    """
+    An object that encapsulates the result of object detection a FaceDetector.
+    """
+
     def __init__(self, ok: bool, confidence: Optional[float], face, crop, image, width: int, height: int):
         self.__ok = ok
         self.__confidence = confidence
@@ -127,8 +146,12 @@ class DetectionResult:
 
 
 class ApplicationCallback(FrameCallback):
-    __ticks: int = 0
-    __previous = (None, None)
+    """
+    An implementation of the FrameCallback interface that provides the core logic of this tool.
+    """
+
+    __ticks: int = 0  # iterations since last mask inference
+    __previous = (None, None)  # cached results of last mask inference
 
     def __init__(self, configuration: ApplicationConfiguration):
         self.__configuration = configuration
@@ -158,13 +181,19 @@ class ApplicationCallback(FrameCallback):
         return self.__configuration.mask
 
     def preprocess(self, frame):
+        """
+        Preprocessing logic in order to prepare a frame for object detection and inference.
+        """
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # cv2 produces frames as BGR
         frame, scaled, scale = rescale(frame, scale=self.__configuration.scale)
         frame.flags.writeable = True
         scaled.flags.writeable = False  # pass by reference
         return np.asarray(frame), scaled, scale
 
-    def extract_detection(self, face: FaceDetector, detection, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> Optional[DetectionResult]:
+    def extract_detection(self, face: FaceDetector, detection, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> Optional[FaceDetectionResult]:
+        """
+        Utility function to extract FaceDetectionResults from the output of a FaceDetectors object detection.
+        """
         box = face.bounding_box(scaled, detection)
 
         if box is None:
@@ -209,19 +238,25 @@ class ApplicationCallback(FrameCallback):
 
         (width, height) = np.shape(image)[:2]
         ok = match_size == width == height
-        return DetectionResult(ok=ok, confidence=box_confidence, face=face_location, crop=crop_location, image=image, width=width, height=height)
+        return FaceDetectionResult(ok=ok, confidence=box_confidence, face=face_location, crop=crop_location, image=image, width=width, height=height)
 
-    def detect(self, face: FaceDetector, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> List[DetectionResult]:
-        output: List[DetectionResult] = []
+    def detect(self, face: FaceDetector, frame, scaled, scale: float, padding: int, match_size: int, frame_width: int, frame_height: int) -> List[FaceDetectionResult]:
+        """
+        Performs face detection upon the image and extracts FaceDetectionResults for processing.
+        """
+        output: List[FaceDetectionResult] = []
         detections = face.detect(scaled)
         for detection in detections:
-            extracted: Optional[DetectionResult] = self.extract_detection(face, detection, frame, scaled, scale, padding, match_size, frame_width, frame_height)
+            extracted: Optional[FaceDetectionResult] = self.extract_detection(face, detection, frame, scaled, scale, padding, match_size, frame_width, frame_height)
             if extracted is None:
                 continue
             output.append(extracted)
         return output
 
-    def classify(self, mask: MaskDetector, detections: List[DetectionResult]):
+    def classify(self, mask: MaskDetector, detections: List[FaceDetectionResult]):
+        """
+        Performs mask inference upon the areas of the image where faces were detected.
+        """
         pending = [(index, detection) for (index, detection) in enumerate(detections) if detection.ok]
         hits, total = len(pending), len(detections)
         output = [None] * total
@@ -239,6 +274,9 @@ class ApplicationCallback(FrameCallback):
         return output
 
     def render(self, frame, mask: MaskDetector, detections, predictions):
+        """
+        Renders the results to the image for display in the GUI.
+        """
         stats = {}
         for index, (detection, prediction) in enumerate(zip(detections, predictions)):
             result: MaskDetectionResult = detection.draw(frame, mask, index, prediction)
@@ -250,6 +288,9 @@ class ApplicationCallback(FrameCallback):
         return frame
 
     def invoke(self, frame) -> Image:
+        """
+        Performs all of the application logic upon each image.
+        """
         # phase 0: setup attributes
         face: FaceDetector = self.face
         mask: MaskDetector = self.mask
