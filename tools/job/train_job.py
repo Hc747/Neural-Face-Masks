@@ -6,10 +6,40 @@ from tensorflow.keras.applications import *
 from constants import *
 from network.network_architecture import ClassificationNetwork, CLASSIFICATION_NETWORK_NAME, LOSS_FUNCTIONS
 
+"""
+A module providing functionality for training models in a consistent manner.
+"""
+
 CHECKPOINT_DELIMITER: str = ':'
 
 
 def train(root_input: str, root_output: str, shape: Tuple[int, int, int], epochs: int, resume: bool, description: str, dataset: str, checkpoint: Optional[str] = None, run_discriminator: Optional[str] = None):
+    """
+    Encapsulates the functionality for building and training a model.
+
+    :param root_input:
+    The base input directory (so as to allow this code to be environment agnostic).
+    :param root_output:
+    The base output directory (so as to allow this code to be environment agnostic).
+    :param shape:
+    The shape of the images in the dataset.
+    :param epochs:
+    The number of epochs to train for.
+    :param resume:
+    Whether or not to continue training from where we left off.
+    :param description:
+    A descriptor for the model we are building.
+    :param dataset:
+    The dataset to use for training. Can be one of MASK_DETECTOR_ASHISH or MASK_DETECTOR_CABANI.
+    :param checkpoint:
+    A ':' delimited string containing the descriptor and epoch of the checkpoint to resume from.
+    :param run_discriminator:
+    A string that uniquely identifies this run - supplied if we need it to be human readable.
+
+    :return:
+    The model, training history, network architecture, class mapping and training data (if any).
+    """
+
     if dataset == MASK_DETECTOR_ASHISH:
         from tools.dataset.ashish import generate
     elif dataset == MASK_DETECTOR_CABANI:
