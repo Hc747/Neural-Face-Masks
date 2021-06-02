@@ -7,7 +7,7 @@ from typing import Tuple, Optional, List
 from app.configuration.configuration import ApplicationConfiguration
 from constants import COLOUR_BLUE, IMAGE_SIZE, MAX_BATCH_SIZE
 from detectors.face.detectors import FaceDetector
-from detectors.mask.detectors import MaskDetector, ResultMapping
+from detectors.mask.detectors import MaskDetector, MaskDetectionResult
 from app.callback.callback import FrameCallback
 from app.processing.image import rescale, translate_scale, resize, adjust_bounding_box
 from app.rendering.rendering import draw_boxes, draw_stats
@@ -135,8 +135,8 @@ class DetectionResult:
     def height(self):
         return self.__height
 
-    def draw(self, frame, mask: MaskDetector, index, prediction) -> ResultMapping:
-        result: ResultMapping = mask.evaluate(prediction)
+    def draw(self, frame, mask: MaskDetector, index, prediction) -> MaskDetectionResult:
+        result: MaskDetectionResult = mask.evaluate(prediction)
         idx: int = index + 1
 
         face_label = f'{idx}: Face - {result.label} - {display_confidence(result.confidence)}'
@@ -261,7 +261,7 @@ class ApplicationCallback(FrameCallback):
     def render(self, frame, mask: MaskDetector, detections, predictions):
         stats = {}
         for index, (detection, prediction) in enumerate(zip(detections, predictions)):
-            result: ResultMapping = detection.draw(frame, mask, index, prediction)
+            result: MaskDetectionResult = detection.draw(frame, mask, index, prediction)
             current: int = stats.get(result.label, 0)
             stats[result.label] = current + 1
             draw_floating_head(frame, detection.image, result.colour, index, items=8, size=64, height_offset=80, width_offset=16)

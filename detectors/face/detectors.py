@@ -6,6 +6,10 @@ from mediapipe.framework.formats import location_data_pb2
 from mediapipe.python.solutions.drawing_utils import RGB_CHANNELS, _normalized_to_pixel_coordinates
 from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, ALL_FACE_DETECTORS, FACE_DETECTOR_MEDIA_PIPE
 
+"""
+A module exporting face detection capabilities through a common FaceDetector interface.
+"""
+
 
 class FaceDetector(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -99,25 +103,52 @@ class MediaPipeFaceDetector(FaceDetector):
 
 
 class FaceDetectorProvider:
+    """
+    A factory object for instantiating various face detection models.
+    """
+
     @staticmethod
     def version() -> str:
         return f'Face detector: dlib v{dlib.__version__}'
 
     @staticmethod
     def media_pipe(confidence: float = 0.5) -> FaceDetector:
+        """
+        Instantiates a FaceDetector utilising the MediaPipe FaceDetection API.
+        :param confidence:
+        The confidence suppression threshold value.
+        """
         detector = mp.solutions.face_detection.FaceDetection(confidence)
         return MediaPipeFaceDetector(detector)
 
     @staticmethod
     def svm() -> FaceDetector:
+        """
+        Instantiates a FaceDetector utilising the DLib API SVM+HoG face detection model.
+        """
         return DLIBFaceDetector(FACE_DETECTOR_SVM, dlib.get_frontal_face_detector(), lambda result: result)
 
     @staticmethod
     def cnn(filename: str) -> FaceDetector:
+        """
+        Instantiates a FaceDetector utilising the DLib API CNN face detection model.
+        :param filename:
+        The file to load the weights and biases from.
+        """
         return DLIBFaceDetector(FACE_DETECTOR_CNN, dlib.cnn_face_detection_model_v1(filename=filename), lambda result: result.rect)
 
     @staticmethod
     def get_face_detector(detector: str, **kwargs) -> FaceDetector:
+        """
+        A factory method that takes a string identifier and any number of keyword arguments in order to export a
+        FaceDetector object.
+        :param detector:
+        The type of detector to instantiate.
+        :param kwargs:
+        The keyword arguments passed into the factory method.
+        :raises ValueError:
+        If the detector parameter is unrecognised.
+        """
         factory = {
             FACE_DETECTOR_MEDIA_PIPE: FaceDetectorProvider.media_pipe,
             FACE_DETECTOR_SVM: FaceDetectorProvider.svm,

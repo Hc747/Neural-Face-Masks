@@ -9,12 +9,16 @@ from constants import MASK_DETECTOR_ASHISH, ALL_MASK_DETECTORS, MASK_DETECTOR_CA
     COLOUR_WHITE, COLOUR_GREEN, COLOUR_RED, COLOUR_YELLOW
 from network.network_architecture import NetworkArchitecture, LOSS_WEIGHTS, LOSS_FUNCTIONS
 
+"""
+A module exporting face mask detection capabilities through a common MaskDetector interface.
+"""
+
 
 __root: str = os.path.abspath('.')
 base: str = os.path.join(__root, 'models', 'mask')
 
 
-class ResultMapping:
+class MaskDetectionResult:
     def __init__(self, idx: int, label: str, confidence: float, colour: Tuple):
         self.__idx = idx
         self.__label = label
@@ -39,7 +43,7 @@ class ResultMapping:
 
     @staticmethod
     def unknown(idx: int, confidence: float):
-        return ResultMapping(idx=idx, label='Unknown', confidence=confidence, colour=COLOUR_WHITE)
+        return MaskDetectionResult(idx=idx, label='Unknown', confidence=confidence, colour=COLOUR_WHITE)
 
 
 class MaskDetector(metaclass=abc.ABCMeta):
@@ -64,7 +68,7 @@ class MaskDetector(metaclass=abc.ABCMeta):
     def name(self) -> str:
         return self.__name
 
-    def evaluate(self, predictions: [float]) -> ResultMapping:
+    def evaluate(self, predictions: [float]) -> MaskDetectionResult:
         values = np.asarray(predictions)
         if values.shape[-1] <= 1:
             raise ValueError('Values in unexpected format: only one indice.')
@@ -72,8 +76,8 @@ class MaskDetector(metaclass=abc.ABCMeta):
         confidence = values[index] * 100.0  # convert to percentage
         mapping = self.__mapping.get(index, None)
         if mapping is None:
-            return ResultMapping.unknown(index, confidence)
-        return ResultMapping(idx=index, label=mapping.get('label'), confidence=confidence, colour=mapping.get('colour'))
+            return MaskDetectionResult.unknown(index, confidence)
+        return MaskDetectionResult(idx=index, label=mapping.get('label'), confidence=confidence, colour=mapping.get('colour'))
 
 
 ASHISH_MAPPING = {
@@ -91,24 +95,41 @@ CABANI_MAPPING = {
 
 
 class MaskDetectorProvider:
+    """
+    A factory object for instantiating various mask detection models.
+    """
+
     @staticmethod
     def version() -> str:
         return f'Mask detector: TensorFlow - {tf.__version__}, Keras: {keras.__version__}, GPU(s): {tf.config.list_physical_devices("GPU")}'
 
     @staticmethod
     def ashish() -> MaskDetector:
+        """
+        Instantiates a MaskDetector trained on the Ashish dataset.
+        """
         directory = os.path.join(base, 'ashish', 'classification', 'checkpoint')
-        model: Model = MaskDetectorProvider.__model(directory)
+        model: Model = MaskDetectorProvider.__load_model(directory)
         return MaskDetector(model=model, mapping=ASHISH_MAPPING, name=MASK_DETECTOR_ASHISH)
 
     @staticmethod
     def cabani() -> MaskDetector:
+        """
+        Instantiates a MaskDetector trained on the Cabani dataset.
+        """
         directory = os.path.join(base, 'cabani', 'classification', 'checkpoint')
-        model: Model = MaskDetectorProvider.__model(directory)
+        model: Model = MaskDetectorProvider.__load_model(directory)
         return MaskDetector(model=model, mapping=CABANI_MAPPING, name=MASK_DETECTOR_CABANI)
 
     @staticmethod
-    def __model(directory: str) -> Model:
+    def __load_model(directory: str) -> Model:
+        """
+        Loads a pre-trained TensorFlow/Keras model.
+        :param directory:
+        The directory to load the model (checkpoint) from.
+        :return:
+        A compiled Keras model instantiated with the checkpointed weights and biases.
+        """
         model = tf.keras.models.load_model(directory)
         if model is None:
             raise ValueError(f'Pre-trained model not found: {directory}')
@@ -116,6 +137,16 @@ class MaskDetectorProvider:
 
     @staticmethod
     def get_mask_detector(detector: str, **kwargs) -> MaskDetector:
+        """
+        A factory method that takes a string identifier and any number of keyword arguments in order to export a
+        MaskDetector object.
+        :param detector:
+        The type of detector to instantiate.
+        :param kwargs:
+        The keyword arguments passed into the factory method.
+        :raises ValueError:
+        If the detector parameter is unrecognised.
+        """
         factory = {
             MASK_DETECTOR_ASHISH: MaskDetectorProvider.ashish,
             MASK_DETECTOR_CABANI: MaskDetectorProvider.cabani
