@@ -4,6 +4,11 @@ from keras_preprocessing.image import ImageDataGenerator
 from constants import VALIDATION_SPLIT
 from tools.dataset.common import get_standard_augmentor, flow
 
+"""
+A module exporting the Ashish dataset in a format usable with the train_job module.
+Dataset: https://www.kaggle.com/ashishjangra27/face-mask-12k-images-dataset
+"""
+
 
 def generate(shape: Tuple[int, int, int], _input: str, _output: str):
     base_directory: str = os.path.join(_input, 'kaggle', 'ashishjangra27', 'face-mask-12k-images-dataset')
