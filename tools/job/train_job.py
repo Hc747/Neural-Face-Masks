@@ -10,7 +10,7 @@ from network.network_architecture import ClassificationNetwork, CLASSIFICATION_N
 A module providing functionality for training models in a consistent manner.
 """
 
-CHECKPOINT_DELIMITER: str = ':'
+__CHECKPOINT_DELIMITER: str = ':'
 
 
 def train(root_input: str, root_output: str, shape: Tuple[int, int, int], epochs: int, resume: bool, description: str, dataset: str, checkpoint: Optional[str] = None, run_discriminator: Optional[str] = None):
@@ -66,8 +66,8 @@ def train(root_input: str, root_output: str, shape: Tuple[int, int, int], epochs
     model = architecture.compile(LOSS_FUNCTIONS[CLASSIFICATION_NETWORK_NAME], None)
 
     if checkpoint is not None:
-        if checkpoint.count(CHECKPOINT_DELIMITER) != 1:
-            raise ValueError(f'Expected checkpoint to contain 1 delimiter character: \'{CHECKPOINT_DELIMITER}\'')
+        if checkpoint.count(__CHECKPOINT_DELIMITER) != 1:
+            raise ValueError(f'Expected checkpoint to contain 1 delimiter character: \'{__CHECKPOINT_DELIMITER}\'')
         timestamp, epoch = checkpoint.split(':', 2)
         epoch = int(epoch)
         if resume:
