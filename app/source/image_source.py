@@ -4,8 +4,8 @@ from threading import Thread
 from typing import Optional, Tuple
 from PIL import Image
 from timing.time_source import TimeSource
-from ui.callback.callback import FrameCallback
-from ui.state import State
+from app.callback.callback import FrameCallback
+from app.state import State
 
 
 ImageFrame = Tuple[Optional[Image.Image], int]

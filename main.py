@@ -1,14 +1,15 @@
-import mediapipe as mp
+# noinspection PyUnresolvedReferences
+import mediapipe
 # application deadlocks if this isn't imported before tensorflow
 import os
-from config import args
-from configuration.configuration import ApplicationConfiguration, debug
+from app.configuration.configuration import ApplicationConfiguration, debug
+from app.callback.application_callback import ApplicationCallback
+from app.callback.callback import FrameCallback
+from app.gui import GUI
 from constants import *
+from config import args
 from detectors.face.detectors import FaceDetectorProvider
-from detectors.mask.detectors import MaskDetectorProvider, MaskDetector
-from ui.callback.application_callback import ApplicationCallback
-from ui.callback.callback import FrameCallback
-from ui.gui import GUI
+from detectors.mask.detectors import MaskDetectorProvider
 
 """
 The application entrypoint.

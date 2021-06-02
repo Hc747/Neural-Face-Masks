@@ -1,20 +1,41 @@
 import sys
 from typing import List, Dict
-
 from constants import ALL_FACE_DETECTORS, ALL_MASK_DETECTORS
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector
 
+"""
+Provides the dynamic configuration properties to other components of the application.
+"""
+
 
 def debug(message, out=sys.stdout):
+    """
+    Prints debugging messages to any output
+    :param message:
+    The message to print
+    :param out:
+    The output stream to print to
+    """
     print(message(), file=out)
 
 
 def expect(condition, message):
+    """
+    Evaluates an assertion based on the supplied predicate
+    :param condition:
+    A conditional predicate
+    :param message:
+    The message to display in case the assertion fails
+    """
     assert condition(), message()
 
 
 class ApplicationConfiguration:
+    """
+    Allows for convenient access and manipulation of the application's configurable settings.
+    """
+
     __debug: bool
     __assert: bool
     __experiment: bool

@@ -2,13 +2,13 @@ import cv2
 from typing import Optional
 from tkinter import *
 from PIL import Image, ImageTk
-from configuration.configuration import ApplicationConfiguration
+from app.configuration.configuration import ApplicationConfiguration
 from constants import FACE_DETECTOR_SVM, FACE_DETECTOR_CNN, FACE_DETECTOR_MEDIA_PIPE, MASK_DETECTOR_CABANI, \
     MASK_DETECTOR_ASHISH
 from timing.time_source import TimeSource
-from ui.callback.callback import FrameCallback, LambdaFrameCallback
-from ui.source.image_source import ImageSource, VideoImageSource
-from ui.state import State
+from app.callback.callback import FrameCallback, LambdaFrameCallback
+from app.source.image_source import ImageSource, VideoImageSource
+from app.state import State
 
 
 class GUI:

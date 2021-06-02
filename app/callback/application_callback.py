@@ -4,13 +4,13 @@ import dlib
 import numpy as np
 from PIL import Image
 from typing import Tuple, Optional, List
-from configuration.configuration import ApplicationConfiguration
+from app.configuration.configuration import ApplicationConfiguration
 from constants import COLOUR_BLUE, IMAGE_SIZE, MAX_BATCH_SIZE
 from detectors.face.detectors import FaceDetector
 from detectors.mask.detectors import MaskDetector, ResultMapping
-from ui.callback.callback import FrameCallback
-from ui.processing.image import rescale, translate_scale, resize, adjust_bounding_box
-from ui.rendering.rendering import draw_boxes, draw_stats
+from app.callback.callback import FrameCallback
+from app.processing.image import rescale, translate_scale, resize, adjust_bounding_box
+from app.rendering.rendering import draw_boxes, draw_stats
 
 
 # TODO: documentation
