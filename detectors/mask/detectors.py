@@ -1,4 +1,3 @@
-import abc
 import os.path
 import numpy as np
 import tensorflow as tf
@@ -19,6 +18,10 @@ base: str = os.path.join(__root, 'models', 'mask')
 
 
 class MaskDetectionResult:
+    """
+    An object that encapsulates the result of inference by a MaskDetector.
+    """
+
     def __init__(self, idx: int, label: str, confidence: float, colour: Tuple):
         self.__idx = idx
         self.__label = label
@@ -31,14 +34,24 @@ class MaskDetectionResult:
 
     @property
     def label(self) -> str:
+        """
+        A human-intelligible label describing the result of this inference.
+        :return:
+        """
         return self.__label
 
     @property
     def confidence(self) -> float:
+        """
+        The confidence (0.0-100.0) of this inference.
+        """
         return self.__confidence
 
     @property
     def colour(self) -> Tuple:
+        """
+        The colour to render this result in.
+        """
         return self.__colour
 
     @staticmethod
@@ -46,29 +59,45 @@ class MaskDetectionResult:
         return MaskDetectionResult(idx=idx, label='Unknown', confidence=confidence, colour=COLOUR_WHITE)
 
 
-class MaskDetector(metaclass=abc.ABCMeta):
+class MaskDetector:
+    """
+    An interface that allows for the classification of images and translation of detection results.
+    """
+
     def __init__(self, model: Model, mapping, name: str):
         self.__model = model
         self.__mapping = mapping
-        self.__size = len(mapping) + 1  # account for unknown case
         self.__name = name
 
     @property
     def model(self) -> Model:
+        """
+        The keras model used for prediction.
+        """
         return self.__model
 
     @property
     def mapping(self):
+        """
+        The dictionary mapping prediction indices to labels and colours.
+        """
         return self.__mapping
 
-    @property
-    def output_size(self) -> int:
-        return self.__size
-
     def name(self) -> str:
+        """
+        The name of this MaskDetector.
+        One of MASK_DETECTOR_ASHISH or MASK_DETECTOR_CABANI.
+        """
         return self.__name
 
     def evaluate(self, predictions: [float]) -> MaskDetectionResult:
+        """
+        Converts an array of prediction confidences into MaskDetectionResults suitable for display to the end user.
+        :param predictions:
+        The array of prediction confidences produced by the underlying model
+        :return:
+        A MaskDetectionResult object denoting the predicted score
+        """
         values = np.asarray(predictions)
         if values.shape[-1] <= 1:
             raise ValueError('Values in unexpected format: only one indice.')
@@ -80,6 +109,7 @@ class MaskDetector(metaclass=abc.ABCMeta):
         return MaskDetectionResult(idx=index, label=mapping.get('label'), confidence=confidence, colour=mapping.get('colour'))
 
 
+# key-value pairs denoting prediction indices => (label, colour) for the Ashish and Cabani datasets
 ASHISH_MAPPING = {
     0: {'label': 'Masked', 'colour': COLOUR_GREEN},
     1: {'label': 'Unmasked', 'colour': COLOUR_RED}
